@@ -125,6 +125,30 @@ class TestLoadSettings:
         assert settings.store_today.minute == 30
         assert settings.store_today.tzinfo == STORE_TZ
 
+    def test_load_settings_store_today_with_utc_offset(self):
+        """STORE_TODAY com offset UTC deve converter para STORE_TZ."""
+        # 2026-02-20 19:30 UTC = 2026-02-20 15:30 Campo Grande (UTC-4)
+        env = {"STORE_TODAY": "2026-02-20T19:30+00:00"}
+        settings = load_settings(env)
+
+        assert settings.store_today is not None
+        # Verificar o instante (não a hora de parede)
+        assert settings.store_today == datetime(2026, 2, 20, 15, 30, tzinfo=STORE_TZ)
+        assert settings.store_today.hour == 15
+        assert settings.store_today.minute == 30
+
+    def test_load_settings_store_today_with_negative_offset(self):
+        """STORE_TODAY com offset negativo deve converter para STORE_TZ."""
+        # 2026-02-20 19:30 -03:00 = 2026-02-20 18:30 Campo Grande (UTC-4)
+        env = {"STORE_TODAY": "2026-02-20T19:30-03:00"}
+        settings = load_settings(env)
+
+        assert settings.store_today is not None
+        # Verificar o instante
+        assert settings.store_today == datetime(2026, 2, 20, 18, 30, tzinfo=STORE_TZ)
+        assert settings.store_today.hour == 18
+        assert settings.store_today.minute == 30
+
     def test_load_settings_store_today_invalid_format(self):
         """STORE_TODAY em formato inválido deve gerar ConfigError."""
         env = {"STORE_TODAY": "20/02/2026"}
