@@ -68,9 +68,7 @@ class TestBuildCatalogTools:
 class TestSearchProducts:
     """Busca por categoria e faixa de preco final (criterios 1 a 5)."""
 
-    def test_violoes_ate_mil_devolve_doze_sem_96_e_113(
-        self, tools_by_name: Mapping[str, ToolSpec]
-    ):
+    def test_violoes_ate_mil_devolve_doze_sem_96_e_113(self, tools_by_name: Mapping[str, ToolSpec]):
         result = _call(
             tools_by_name, "search_products", category="violões", max_price=1000, limit=20
         )
@@ -174,9 +172,7 @@ class TestGetProductDetails:
         result = _call(tools_by_name, "get_product_details", name="takamine gd20")
         assert result["product_id"] == 95
 
-    def test_busca_por_nome_ambiguo_devolve_candidatos(
-        self, tools_by_name: Mapping[str, ToolSpec]
-    ):
+    def test_busca_por_nome_ambiguo_devolve_candidatos(self, tools_by_name: Mapping[str, ToolSpec]):
         result = _call(tools_by_name, "get_product_details", name="takamine")
         assert result["error"] == "multiple_matches"
         assert len(result["candidates"]) > 1
@@ -186,9 +182,7 @@ class TestGetProductDetails:
         result = _call(tools_by_name, "get_product_details", name="xilofone")
         assert result["error"] == "product_not_found"
 
-    def test_sem_argumentos_devolve_invalid_arguments(
-        self, tools_by_name: Mapping[str, ToolSpec]
-    ):
+    def test_sem_argumentos_devolve_invalid_arguments(self, tools_by_name: Mapping[str, ToolSpec]):
         result = _call(tools_by_name, "get_product_details")
         assert result["error"] == "invalid_arguments"
 
@@ -215,9 +209,7 @@ class TestSerializacaoJson:
     def test_retornos_sao_json_serializaveis(self, tools_by_name: Mapping[str, ToolSpec]):
         results = [
             _call(tools_by_name, "search_products"),
-            _call(
-                tools_by_name, "search_products", category="violões", max_price=1000, limit=20
-            ),
+            _call(tools_by_name, "search_products", category="violões", max_price=1000, limit=20),
             _call(tools_by_name, "get_product_details", product_id=95),
             _call(tools_by_name, "get_product_details", product_id=94),
             _call(tools_by_name, "get_product_details", product_id=96),

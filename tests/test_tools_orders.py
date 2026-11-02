@@ -97,9 +97,7 @@ class TestVerificacaoDeTitularidade:
         assert resultado_inexistente == resultado_errado
         assert resultado_inexistente["error"] == "verification_failed"
 
-    def test_mensagem_de_falha_nao_revela_existencia(
-        self, order_book: OrderBook, catalog: Catalog
-    ):
+    def test_mensagem_de_falha_nao_revela_existencia(self, order_book: OrderBook, catalog: Catalog):
         tools = _tools_by_name(order_book, catalog, _clock("2026-02-20"))
         result = _call(tools, order_id=10, email_or_phone="errado@email.com")
         assert set(result.keys()) == {"error", "message"}
