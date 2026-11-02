@@ -7,14 +7,13 @@ dado pessoal do cliente (nome, e-mail, telefone, cidade) entra no retorno.
 
 from __future__ import annotations
 
-from decimal import ROUND_HALF_UP, Decimal
-
 from emporio.config import Clock
 from emporio.data.catalog import Catalog
 from emporio.data.models import Order
 from emporio.data.orders import OrderBook
 from emporio.domain.returns import ReturnKind, ReturnWindow, return_windows
 from emporio.tools.base import JsonDict, ToolSpec, tool_error
+from emporio.tools.formatting import format_brl, to_cents
 
 __all__ = ["build_order_tools"]
 
@@ -29,43 +28,26 @@ _STATUS_LABELS: dict[str, str] = {
 
 _RETURN_KIND_LABELS: dict[ReturnKind, str] = {
     ReturnKind.WITHDRAWAL: "arrependimento",
-    ReturnKind.PREFERENCE: "troca por preferencia",
+    ReturnKind.PREFERENCE: "troca por preferência",
     ReturnKind.DEFECT: "troca por defeito",
     ReturnKind.LEGAL_WARRANTY: "garantia legal",
 }
 
 _VERIFICATION_FAILED_MESSAGE = (
-    "Nao foi possivel verificar o pedido. Informe o numero do pedido e o "
+    "Não foi possível verificar o pedido. Informe o número do pedido e o "
     "e-mail ou telefone cadastrado no pedido para eu poder consultar."
 )
-
-
-def _format_brl(value: Decimal) -> str:
-    """Formata um valor em reais no padrao brasileiro (ex.: "R$ 3.450,00")."""
-    quant = value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    sign = "-" if quant < 0 else ""
-    quant = abs(quant)
-    integer_part, decimal_part = f"{quant:.2f}".split(".")
-    groups = [integer_part[max(i - 3, 0) : i] for i in range(len(integer_part), 0, -3)]
-    grouped_integer = ".".join(reversed(groups))
-    return f"{sign}R$ {grouped_integer},{decimal_part}"
-
-
-def _cents(value: Decimal) -> int:
-    """Converte um valor em reais para centavos (inteiro), para comparacao numerica."""
-    quant = value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    return int((quant * 100).to_integral_value(rounding=ROUND_HALF_UP))
 
 
 def _window_message(window: ReturnWindow) -> str:
     """Frase pronta em portugues para o estado da janela de troca/devolucao."""
     if window.not_started:
-        return "o prazo comeca a contar quando voce receber o pedido"
+        return "o prazo começa a contar quando você receber o pedido"
     if window.is_open:
         if window.days_remaining == 0:
             return "aberto: vence hoje"
         return f"aberto: restam {window.days_remaining} dia(s)"
-    return f"vencido ha {window.days_expired} dia(s)"
+    return f"vencido há {window.days_expired} dia(s)"
 
 
 def _window_block(window: ReturnWindow) -> JsonDict:
@@ -98,8 +80,8 @@ def build_order_tools(
             "order_date": order.order_date.isoformat(),
             "status": order.status,
             "status_label": _STATUS_LABELS[order.status],
-            "total_brl": _format_brl(order.total_brl),
-            "total_cents": _cents(order.total_brl),
+            "total_brl": format_brl(order.total_brl),
+            "total_cents": to_cents(order.total_brl),
             "payment_form": order.payment_form,
             "installments": order.installments,
             "items": _items_block(order),
@@ -127,13 +109,13 @@ def build_order_tools(
     spec = ToolSpec(
         name="get_order_status",
         description=(
-            "Consulta o status de um pedido. Exige o numero do pedido e o e-mail "
+            "Consulta o status de um pedido. Exige o número do pedido e o e-mail "
             "ou telefone cadastrado no titular do pedido."
         ),
         parameters={
             "type": "object",
             "properties": {
-                "order_id": {"type": "integer", "description": "Numero do pedido"},
+                "order_id": {"type": "integer", "description": "Número do pedido"},
                 "email_or_phone": {
                     "type": "string",
                     "description": "E-mail ou telefone cadastrado no titular do pedido",

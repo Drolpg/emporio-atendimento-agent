@@ -8,12 +8,13 @@ o modelo recebe (RF-02, RF-03, RF-04, RF-09, RNF-01, RNF-02).
 
 from __future__ import annotations
 
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import Decimal
 
 from emporio.data.catalog import Catalog
 from emporio.data.models import Availability, Product
 from emporio.domain.pricing import PriceQuote, promotional_price, quote
 from emporio.tools.base import JsonDict, ToolSpec, tool_error
+from emporio.tools.formatting import format_brl, to_cents
 
 __all__ = ["build_catalog_tools"]
 
@@ -25,28 +26,20 @@ _AVAILABILITY_LABELS: dict[Availability, str] = {
     Availability.COMING_SOON: "em breve",
 }
 
+# Cada frase repete so o que o manual 7.3 sustenta (RNF-01): "discontinued" e
+# fora do catalogo da loja, nao diz nada sobre o fabricante continuar ou nao
+# produzindo; "out_of_stock" nao tem informacao de reposicao em nenhuma
+# fonte; "coming_soon" nao tem prazo definido em nenhuma fonte.
 _SITUATION_MESSAGES: dict[Availability, str] = {
-    Availability.OUT_OF_STOCK: "Produto esgotado no momento, sem previsao de reposicao.",
-    Availability.DISCONTINUED: "Produto fora de linha, nao e mais fabricado.",
-    Availability.COMING_SOON: "Produto ainda nao disponivel para venda, chega em breve.",
+    Availability.OUT_OF_STOCK: (
+        "Produto temporariamente indisponível no momento; veja alternativas semelhantes abaixo."
+    ),
+    Availability.DISCONTINUED: (
+        "Produto não faz mais parte do catálogo da loja; veja modelos equivalentes "
+        "ou sucessores abaixo."
+    ),
+    Availability.COMING_SOON: "Produto ainda não está disponível para venda.",
 }
-
-
-def _format_brl(value: Decimal) -> str:
-    """Formata um valor em reais no padrao brasileiro (ex.: "R$ 2.199,00")."""
-    quant = value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    sign = "-" if quant < 0 else ""
-    quant = abs(quant)
-    integer_part, decimal_part = f"{quant:.2f}".split(".")
-    groups = [integer_part[max(i - 3, 0) : i] for i in range(len(integer_part), 0, -3)]
-    grouped_integer = ".".join(reversed(groups))
-    return f"{sign}R$ {grouped_integer},{decimal_part}"
-
-
-def _cents(value: Decimal) -> int:
-    """Converte um valor em reais para centavos (inteiro), para comparacao numerica."""
-    quant = value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    return int((quant * 100).to_integral_value(rounding=ROUND_HALF_UP))
 
 
 def _availability_label(product: Product) -> str:
@@ -74,10 +67,10 @@ def _product_summary(product: Product) -> JsonDict:
         "product_id": product.product_id,
         "name": product.name,
         "category": product.category_name,
-        "list_price_brl": _format_brl(product.price_brl),
-        "list_price_cents": _cents(product.price_brl),
-        "final_price_brl": _format_brl(final_price),
-        "final_price_cents": _cents(final_price),
+        "list_price_brl": format_brl(product.price_brl),
+        "list_price_cents": to_cents(product.price_brl),
+        "final_price_brl": format_brl(final_price),
+        "final_price_cents": to_cents(final_price),
         "availability": _availability_label(product),
     }
     if product.promotion is not None:
@@ -91,8 +84,8 @@ def _alternative_summary(product: Product) -> JsonDict:
     return {
         "product_id": product.product_id,
         "name": product.name,
-        "final_price_brl": _format_brl(final_price),
-        "final_price_cents": _cents(final_price),
+        "final_price_brl": format_brl(final_price),
+        "final_price_cents": to_cents(final_price),
         "availability": _availability_label(product),
     }
 
@@ -100,27 +93,27 @@ def _alternative_summary(product: Product) -> JsonDict:
 def _payment_block(price_quote: PriceQuote) -> JsonDict:
     """Bloco de condicoes de pagamento, a partir de uma `PriceQuote` do dominio."""
     block: JsonDict = {
-        "list_price_brl": _format_brl(price_quote.list_price),
-        "list_price_cents": _cents(price_quote.list_price),
-        "final_price_brl": _format_brl(price_quote.final_price),
-        "final_price_cents": _cents(price_quote.final_price),
+        "list_price_brl": format_brl(price_quote.list_price),
+        "list_price_cents": to_cents(price_quote.list_price),
+        "final_price_brl": format_brl(price_quote.final_price),
+        "final_price_cents": to_cents(price_quote.final_price),
         "max_installments": price_quote.max_installments,
         "allows_combined_payment": price_quote.allows_combined_payment,
     }
     if price_quote.discount_percent is not None:
         block["promotion"] = {
             "discount_percent": price_quote.discount_percent,
-            "original_price_brl": _format_brl(price_quote.list_price),
-            "original_price_cents": _cents(price_quote.list_price),
-            "final_price_brl": _format_brl(price_quote.final_price),
-            "final_price_cents": _cents(price_quote.final_price),
+            "original_price_brl": format_brl(price_quote.list_price),
+            "original_price_cents": to_cents(price_quote.list_price),
+            "final_price_brl": format_brl(price_quote.final_price),
+            "final_price_cents": to_cents(price_quote.final_price),
         }
     if price_quote.pix_price is not None:
-        block["pix_price_brl"] = _format_brl(price_quote.pix_price)
-        block["pix_price_cents"] = _cents(price_quote.pix_price)
+        block["pix_price_brl"] = format_brl(price_quote.pix_price)
+        block["pix_price_cents"] = to_cents(price_quote.pix_price)
     if price_quote.installment_value is not None:
-        block["installment_value_brl"] = _format_brl(price_quote.installment_value)
-        block["installment_value_cents"] = _cents(price_quote.installment_value)
+        block["installment_value_brl"] = format_brl(price_quote.installment_value)
+        block["installment_value_cents"] = to_cents(price_quote.installment_value)
     return block
 
 
@@ -165,7 +158,7 @@ def _build_search_products(catalog: Catalog) -> ToolSpec:
                 names = ", ".join(cat.name for cat in catalog.categories())
                 return tool_error(
                     "unknown_category",
-                    f"Categoria '{category}' nao encontrada. Categorias disponiveis: {names}.",
+                    f"Categoria '{category}' não encontrada. Categorias disponíveis: {names}.",
                 )
             category_id = found_category.category_id
             category_name = found_category.name
@@ -196,35 +189,35 @@ def _build_search_products(catalog: Catalog) -> ToolSpec:
     return ToolSpec(
         name="search_products",
         description=(
-            "Busca produtos no catalogo por texto, categoria e faixa de preco final "
-            "(ja com promocao aplicada). Por padrao mostra so itens compraveis."
+            "Busca produtos no catálogo por texto, categoria e faixa de preço final "
+            "(já com promoção aplicada). Por padrão mostra só itens compráveis."
         ),
         parameters={
             "type": "object",
             "properties": {
                 "query": {
                     "type": "string",
-                    "description": "Texto livre para buscar no nome ou na descricao do produto",
+                    "description": "Texto livre para buscar no nome ou na descrição do produto",
                 },
                 "category": {
                     "type": "string",
-                    "description": "Nome da categoria, ex.: 'violoes', 'guitarras'",
+                    "description": "Nome da categoria, ex.: 'violões', 'guitarras'",
                 },
                 "min_price": {
                     "type": "number",
-                    "description": "Preco final minimo em reais",
+                    "description": "Preço final mínimo em reais",
                 },
                 "max_price": {
                     "type": "number",
-                    "description": "Preco final maximo em reais",
+                    "description": "Preço final máximo em reais",
                 },
                 "only_available": {
                     "type": "boolean",
-                    "description": "Se true (padrao), mostra so produtos compraveis agora",
+                    "description": "Se true (padrão), mostra só produtos compráveis agora",
                 },
                 "limit": {
                     "type": "integer",
-                    "description": "Numero maximo de produtos no resultado (padrao 8)",
+                    "description": "Número máximo de produtos no resultado (padrão 8)",
                 },
             },
             "required": [],
@@ -259,7 +252,7 @@ def _build_get_product_details(catalog: Catalog) -> ToolSpec:
                 return {
                     "error": "multiple_matches",
                     "message": (
-                        "Mais de um produto corresponde a busca; pergunte ao cliente "
+                        "Mais de um produto corresponde à busca; pergunte ao cliente "
                         "qual deles ele quer antes de dar detalhes."
                     ),
                     "candidates": [
@@ -274,8 +267,8 @@ def _build_get_product_details(catalog: Catalog) -> ToolSpec:
     return ToolSpec(
         name="get_product_details",
         description=(
-            "Detalha um produto do catalogo: specs, disponibilidade, condicoes de "
-            "pagamento e alternativas quando indisponivel. Use product_id ou name."
+            "Detalha um produto do catálogo: specs, disponibilidade, condições de "
+            "pagamento e alternativas quando indisponível. Use product_id ou name."
         ),
         parameters={
             "type": "object",
@@ -283,7 +276,7 @@ def _build_get_product_details(catalog: Catalog) -> ToolSpec:
                 "product_id": {"type": "integer", "description": "Id do produto"},
                 "name": {
                     "type": "string",
-                    "description": "Nome ou parte do nome do produto, quando nao ha id",
+                    "description": "Nome ou parte do nome do produto, quando não há id",
                 },
             },
             "required": [],
@@ -307,7 +300,7 @@ def _build_list_categories(catalog: Catalog) -> ToolSpec:
 
     return ToolSpec(
         name="list_categories",
-        description="Lista todas as categorias do catalogo, com a contagem de itens compraveis.",
+        description="Lista todas as categorias do catálogo, com a contagem de itens compráveis.",
         parameters={"type": "object", "properties": {}, "required": []},
         handler=handler,
     )
