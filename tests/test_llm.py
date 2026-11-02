@@ -204,7 +204,9 @@ class TestOpenAiCompatibleClientResilience:
         error = FakeApiStatusError("limite excedido", status_code=429, headers={"retry-after": "2"})
         client = FakeOpenAiClient([error, _make_response("ok")])
         sleeps: list[float] = []
-        sut = OpenAiCompatibleClient(_settings(), client=client, sleep=sleeps.append, max_attempts=3)
+        sut = OpenAiCompatibleClient(
+            _settings(), client=client, sleep=sleeps.append, max_attempts=3
+        )
 
         result = sut.complete([{"role": "user", "content": "oi"}])
 
@@ -215,7 +217,9 @@ class TestOpenAiCompatibleClientResilience:
         errors = [FakeApiStatusError("limite", status_code=429) for _ in range(3)]
         client = FakeOpenAiClient(list(errors))
         sleeps: list[float] = []
-        sut = OpenAiCompatibleClient(_settings(), client=client, sleep=sleeps.append, max_attempts=3)
+        sut = OpenAiCompatibleClient(
+            _settings(), client=client, sleep=sleeps.append, max_attempts=3
+        )
 
         with pytest.raises(LlmUnavailable):
             sut.complete([{"role": "user", "content": "oi"}])
@@ -229,7 +233,9 @@ class TestOpenAiCompatibleClientResilience:
         ]
         client = FakeOpenAiClient([*errors, _make_response("ok")])
         sleeps: list[float] = []
-        sut = OpenAiCompatibleClient(_settings(), client=client, sleep=sleeps.append, max_attempts=3)
+        sut = OpenAiCompatibleClient(
+            _settings(), client=client, sleep=sleeps.append, max_attempts=3
+        )
 
         sut.complete([{"role": "user", "content": "oi"}])
 
@@ -237,10 +243,16 @@ class TestOpenAiCompatibleClientResilience:
 
     def test_connection_error_exhausted_raises_unavailable(self) -> None:
         client = FakeOpenAiClient(
-            [FakeConnectionError("falhou"), FakeConnectionError("falhou"), FakeConnectionError("falhou")]
+            [
+                FakeConnectionError("falhou"),
+                FakeConnectionError("falhou"),
+                FakeConnectionError("falhou"),
+            ]
         )
         sleeps: list[float] = []
-        sut = OpenAiCompatibleClient(_settings(), client=client, sleep=sleeps.append, max_attempts=3)
+        sut = OpenAiCompatibleClient(
+            _settings(), client=client, sleep=sleeps.append, max_attempts=3
+        )
 
         with pytest.raises(LlmUnavailable):
             sut.complete([{"role": "user", "content": "oi"}])
@@ -251,7 +263,9 @@ class TestOpenAiCompatibleClientResilience:
         errors = [FakeApiStatusError("fora do ar", status_code=503) for _ in range(3)]
         client = FakeOpenAiClient(list(errors))
         sleeps: list[float] = []
-        sut = OpenAiCompatibleClient(_settings(), client=client, sleep=sleeps.append, max_attempts=3)
+        sut = OpenAiCompatibleClient(
+            _settings(), client=client, sleep=sleeps.append, max_attempts=3
+        )
 
         with pytest.raises(LlmUnavailable):
             sut.complete([{"role": "user", "content": "oi"}])
@@ -259,7 +273,9 @@ class TestOpenAiCompatibleClientResilience:
     def test_authentication_error_fails_immediately_without_retry(self) -> None:
         client = FakeOpenAiClient([FakeApiStatusError("chave invalida", status_code=401)])
         sleeps: list[float] = []
-        sut = OpenAiCompatibleClient(_settings(), client=client, sleep=sleeps.append, max_attempts=3)
+        sut = OpenAiCompatibleClient(
+            _settings(), client=client, sleep=sleeps.append, max_attempts=3
+        )
 
         with pytest.raises(LlmError):
             sut.complete([{"role": "user", "content": "oi"}])
@@ -270,7 +286,9 @@ class TestOpenAiCompatibleClientResilience:
     def test_other_4xx_error_fails_immediately_without_retry(self) -> None:
         client = FakeOpenAiClient([FakeApiStatusError("payload invalido", status_code=400)])
         sleeps: list[float] = []
-        sut = OpenAiCompatibleClient(_settings(), client=client, sleep=sleeps.append, max_attempts=3)
+        sut = OpenAiCompatibleClient(
+            _settings(), client=client, sleep=sleeps.append, max_attempts=3
+        )
 
         with pytest.raises(LlmError):
             sut.complete([{"role": "user", "content": "oi"}])
@@ -341,4 +359,6 @@ class TestScriptedLlm:
         reply = reply_tool("get_policy", call_id="call-9", topic="hours")
 
         assert reply.text is None
-        assert reply.tool_calls == (ToolCall(id="call-9", name="get_policy", arguments={"topic": "hours"}),)
+        assert reply.tool_calls == (
+            ToolCall(id="call-9", name="get_policy", arguments={"topic": "hours"}),
+        )

@@ -24,7 +24,9 @@ class ScriptedLlm:
         self, messages: Sequence[dict[str, Any]], tools: Sequence[dict[str, Any]] = ()
     ) -> LlmReply:
         """Registra a chamada e devolve a proxima resposta do roteiro."""
-        self.calls.append((tuple(dict(message) for message in messages), tuple(dict(tool) for tool in tools)))
+        self.calls.append(
+            (tuple(dict(message) for message in messages), tuple(dict(tool) for tool in tools))
+        )
 
         if self._next >= len(self._replies):
             raise AssertionError(
@@ -44,4 +46,6 @@ def reply_text(text: str) -> LlmReply:
 
 def reply_tool(name: str, call_id: str = "call-1", **arguments: Any) -> LlmReply:
     """Monta uma resposta com uma unica chamada de ferramenta."""
-    return LlmReply(text=None, tool_calls=(ToolCall(id=call_id, name=name, arguments=dict(arguments)),))
+    return LlmReply(
+        text=None, tool_calls=(ToolCall(id=call_id, name=name, arguments=dict(arguments)),)
+    )
