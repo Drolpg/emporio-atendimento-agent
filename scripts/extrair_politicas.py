@@ -340,12 +340,39 @@ def _build_divergencias(
     ]
 
 
+def _apply_adopted_values(
+    section_texts: dict[str, str], company: dict[str, str], store: dict[str, Any]
+) -> dict[str, str]:
+    """Troca, no texto das secoes expostas, o valor divergente do manual pelo adotado.
+
+    P-01 e P-02 normalizam telefone e e-mail nos campos estruturados de
+    `loja`; essa mesma normalizacao precisa valer dentro do texto das
+    secoes (ex.: a tabela de Dados da Empresa, secao 1.2), senao
+    `get_policy` devolveria ao cliente o valor divergente que a loja
+    decidiu nao adotar. O valor divergente continua rastreavel em
+    `divergencias`.
+    """
+    substituicoes = {
+        company["E-mail"]: store["email"],
+        company["Telefone / WhatsApp"]: store["telefone"],
+    }
+    resultado = dict(section_texts)
+    for numero, texto in resultado.items():
+        for divergente, adotado in substituicoes.items():
+            if divergente != adotado:
+                texto = texto.replace(divergente, adotado)
+        resultado[numero] = texto
+    return resultado
+
+
 def extract_policy_book(pdf_path: Path) -> dict[str, Any]:
     """Le o PDF do manual e monta a estrutura do politicas.json."""
     with pdfplumber.open(pdf_path) as pdf:
         company = _extract_company_table(pdf)
         store = _build_store_info(company)
         section_texts, manual_meta = _build_section_texts(pdf)
+
+    section_texts = _apply_adopted_values(section_texts, company, store)
 
     secoes: list[dict[str, Any]] = []
     for numero, titulo, topico, uso_interno in SECTION_DEFS:
