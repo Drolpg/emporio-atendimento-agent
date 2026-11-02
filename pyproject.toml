@@ -1,0 +1,43 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "emporio-atendimento-agent"
+version = "0.1.0"
+description = "Agente de atendimento por texto para a Emporio da Musica"
+requires-python = ">=3.11"
+authors = [{name = "Leandro Nascimento"}]
+dependencies = [
+    "openai",
+    "pandas",
+    "python-dotenv",
+    "rich",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+    "pdfplumber",
+]
+
+[project.scripts]
+emporio = "emporio.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/emporio"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+    "llm: marks tests as llm evals that require API key (deselect with '-m \"not llm\"')",
+]
