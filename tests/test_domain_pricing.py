@@ -24,20 +24,19 @@ class TestConstants:
 
     def test_pix_discount_percent(self):
         """O desconto do PIX e de 5%."""
-        assert Decimal("5") == PIX_DISCOUNT_PERCENT
+        assert PIX_DISCOUNT_PERCENT == Decimal("5")
 
     def test_combined_payment_min(self):
         """O minimo para pagamento combinado e R$ 2000."""
-        assert Decimal("2000") == COMBINED_PAYMENT_MIN
+        assert COMBINED_PAYMENT_MIN == Decimal("2000")
 
     def test_installment_bands(self):
         """As faixas de parcela minima seguem o manual 3.1."""
-        expected = (
+        assert INSTALLMENT_BANDS == (
             (1, 3, Decimal("50")),
             (4, 6, Decimal("80")),
             (7, 12, Decimal("100")),
         )
-        assert expected == INSTALLMENT_BANDS
 
 
 class TestPromotionalPrice:
