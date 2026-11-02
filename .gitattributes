@@ -1,0 +1,10 @@
+# Fim de linha LF no repositorio e na copia de trabalho, em qualquer sistema.
+# Sem isto, uma maquina com core.autocrlf=true traz CRLF num clone novo, e o
+# teste que confere `data/processed/politicas.json` byte a byte contra o PDF
+# passa a falhar por causa do fim de linha, nao por causa do conteudo.
+* text=auto eol=lf
+
+# Dados de origem: CSV e texto, PDF e binario.
+*.csv text eol=lf
+*.pdf binary
+*.sqlite3 binary
