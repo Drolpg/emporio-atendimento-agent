@@ -1,7 +1,7 @@
 .PHONY: setup check test lint fmt
 
 setup:
-	bash scripts/check.sh
+	uv sync
 
 check:
 	bash scripts/check.sh
