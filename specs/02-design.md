@@ -50,6 +50,7 @@ data/raw/  data/processed/
 | `orders.total_brl` | usado como está, nunca recalculado a partir dos itens (pedidos 3 e 20 divergem por desconto); promoção ativa hoje não se aplica a pedido antigo |
 | `customers` | e-mail normalizado em minúsculas, telefone só dígitos para comparação; e-mail NÃO é chave única (clientes 11 e 43) |
 | Manual | seções numeradas → `data/processed/politicas.json` (gerado por comando e versionado) |
+| Divergências do manual | o texto de uma seção exposta a tópico carrega o **valor adotado** (P-01, P-02), não o divergente; o valor como está no manual fica rastreável em `divergencias`. Sem isso, `get_policy` devolveria ao cliente o e-mail com domínio acentuado que a P-02 descartou |
 
 ## Ferramentas do agente
 | Ferramenta | Entrada | Saída |
