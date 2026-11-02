@@ -23,11 +23,11 @@ class TestConstants:
 
     def test_free_shipping_min(self):
         """O frete gratis vale acima de R$ 500."""
-        assert FREE_SHIPPING_MIN == Decimal("500")
+        assert Decimal("500") == FREE_SHIPPING_MIN
 
     def test_local_flat_fee(self):
         """A taxa fixa local e R$ 35."""
-        assert LOCAL_FLAT_FEE == Decimal("35")
+        assert Decimal("35") == LOCAL_FLAT_FEE
 
 
 class TestLocalShipping:
