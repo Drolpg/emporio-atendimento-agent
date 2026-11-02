@@ -187,6 +187,76 @@ class TestGetProductDetails:
         assert result["error"] == "invalid_arguments"
 
 
+class TestSituationMessageFidelidade:
+    """`situation_message` so repete o que o manual 7.3 sustenta, nunca inventa (RNF-01)."""
+
+    @pytest.mark.parametrize("product_id", [96, 136, 130])
+    def test_situation_message_nao_inventa_fato_sem_fonte(
+        self, tools_by_name: Mapping[str, ToolSpec], product_id: int
+    ):
+        result = _call(tools_by_name, "get_product_details", product_id=product_id)
+        message = result["situation_message"].lower()
+
+        assert "fabricado" not in message
+        assert "reposição" not in message
+        assert "reposicao" not in message
+        assert "breve" not in message
+
+    def test_produto_136_descontinuado_diz_fora_do_catalogo(
+        self, tools_by_name: Mapping[str, ToolSpec]
+    ):
+        result = _call(tools_by_name, "get_product_details", product_id=136)
+        assert "catálogo" in result["situation_message"].lower()
+
+    def test_produto_96_esgotado_diz_temporariamente_indisponivel(
+        self, tools_by_name: Mapping[str, ToolSpec]
+    ):
+        result = _call(tools_by_name, "get_product_details", product_id=96)
+        assert "temporariamente" in result["situation_message"].lower()
+
+    def test_produto_130_em_breve_nao_promete_prazo(self, tools_by_name: Mapping[str, ToolSpec]):
+        result = _call(tools_by_name, "get_product_details", product_id=130)
+        assert "disponível para venda" in result["situation_message"].lower()
+
+
+class TestTextoComAcentoParaOCliente:
+    """Mensagens que o LLM le (erro, descricao de ferramenta/parametro) vem acentuadas."""
+
+    def test_unknown_category_tem_acento(self, tools_by_name: Mapping[str, ToolSpec]):
+        result = _call(tools_by_name, "search_products", category="saxofones")
+        assert "não encontrada" in result["message"]
+        assert "disponíveis" in result["message"]
+
+    def test_invalid_arguments_tem_acento(self, tools_by_name: Mapping[str, ToolSpec]):
+        result = _call(tools_by_name, "get_product_details")
+        assert "identificar" in result["message"]
+        # "Informe" nao tem acento, mas a frase inteira nao pode usar "nao" sem til.
+        assert "nao" not in result["message"].split()
+
+    def test_multiple_matches_tem_acento(self, tools_by_name: Mapping[str, ToolSpec]):
+        result = _call(tools_by_name, "get_product_details", name="takamine")
+        assert "à busca" in result["message"]
+
+    def test_descricao_das_ferramentas_tem_acento(self, tool_specs: tuple[ToolSpec, ...]):
+        descriptions = {spec.name: spec.description for spec in tool_specs}
+        assert "catálogo" in descriptions["search_products"]
+        assert "catálogo" in descriptions["get_product_details"]
+        assert "catálogo" in descriptions["list_categories"]
+        assert "compráveis" in descriptions["list_categories"]
+
+    def test_descricao_dos_parametros_tem_acento(self, tool_specs: tuple[ToolSpec, ...]):
+        by_name = {spec.name: spec for spec in tool_specs}
+        search_properties = by_name["search_products"].parameters["properties"]
+        assert "descrição" in search_properties["query"]["description"]
+        assert "mínimo" in search_properties["min_price"]["description"]
+        assert "máximo" in search_properties["max_price"]["description"]
+        assert "padrão" in search_properties["only_available"]["description"]
+        assert "Número" in search_properties["limit"]["description"]
+
+        details_properties = by_name["get_product_details"].parameters["properties"]
+        assert "não há" in details_properties["name"]["description"]
+
+
 class TestListCategories:
     """`list_categories` traz as 9 categorias, com contagem 0 nas sem item (criterio 12)."""
 

@@ -184,6 +184,49 @@ class TestElegibilidadeDeTrocaEDevolucao:
         assert "vencido" in withdrawal["message"]
 
 
+class TestTextoComAcentoParaOCliente:
+    """Mensagens que o LLM le (erro, rotulo, frase de prazo, descricao) vem acentuadas."""
+
+    def test_verification_failed_tem_acento(self, order_book: OrderBook, catalog: Catalog):
+        tools = _tools_by_name(order_book, catalog, _clock("2026-02-20"))
+        result = _call(tools, order_id=999, email_or_phone="qualquer@email.com")
+
+        assert "Não foi possível" in result["message"]
+        assert "número do pedido" in result["message"]
+
+    def test_rotulo_troca_por_preferencia_tem_acento(self, order_book: OrderBook, catalog: Catalog):
+        customer = order_book.customer(order_book.order(7).customer_id)
+        tools = _tools_by_name(order_book, catalog, _clock("2026-02-20"))
+        result = _call(tools, order_id=7, email_or_phone=customer.email)
+
+        assert result["return_eligibility"]["preference"]["label"] == "troca por preferência"
+
+    def test_frase_de_prazo_vencido_tem_acento(self, order_book: OrderBook, catalog: Catalog):
+        customer = order_book.customer(order_book.order(7).customer_id)
+        tools = _tools_by_name(order_book, catalog, _clock("2026-02-25"))
+        result = _call(tools, order_id=7, email_or_phone=customer.email)
+
+        assert "há" in result["return_eligibility"]["withdrawal"]["message"]
+
+    def test_frase_de_prazo_nao_iniciado_tem_acento(self, order_book: OrderBook, catalog: Catalog):
+        customer = order_book.customer(order_book.order(8).customer_id)
+        tools = _tools_by_name(order_book, catalog, _clock("2026-02-20"))
+        result = _call(tools, order_id=8, email_or_phone=customer.email)
+
+        message = result["return_eligibility"]["withdrawal"]["message"]
+        assert "começa" in message
+        assert "você" in message
+
+    def test_descricao_da_ferramenta_e_dos_parametros_tem_acento(
+        self, order_book: OrderBook, catalog: Catalog
+    ):
+        specs = build_order_tools(order_book, catalog, _clock("2026-02-20"))
+        spec = specs[0]
+
+        assert "número" in spec.description
+        assert "Número" in spec.parameters["properties"]["order_id"]["description"]
+
+
 class TestPrivacidade:
     """Nenhum dado pessoal do cliente aparece no retorno (criterio 22, RNF-02)."""
 
