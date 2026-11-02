@@ -1,0 +1,238 @@
+{
+  "fonte": "data/raw/politicas_da_loja.pdf",
+  "versao_manual": "2.1",
+  "atualizado_em": "Junho de 2025",
+  "loja": {
+    "razao_social": "Empório da Música Instrumentos Musicais Ltda.",
+    "nome_fantasia": "Empório da Música",
+    "cnpj": "12.345.678/0001-90",
+    "endereco": "Rua 14 de Maio, 3200 — Centro",
+    "cidade": "Campo Grande",
+    "uf": "MS",
+    "cep": "79202-333",
+    "telefone": "(67) 3341-4444",
+    "email": "contato@emporiodamusica.com.br",
+    "fundacao": 2008
+  },
+  "divergencias": [
+    {
+      "id": "P-01",
+      "campo": "telefone",
+      "no_manual": "A seção 7 (Atendimento via WhatsApp) cita o canal (67) 3321-4500, diferente do telefone (67) 3341-4444 da tabela de Dados da Empresa (seção 1.2) e da capa.",
+      "adotado": "(67) 3341-4444",
+      "motivo": "(67) 3341-4444 aparece duas vezes no manual, incluindo a tabela oficial de dados da empresa; o número da seção 7 é tratado como divergência pontual e não substitui o telefone oficial."
+    },
+    {
+      "id": "P-02",
+      "campo": "email",
+      "no_manual": "A tabela de Dados da Empresa (seção 1.2) traz o e-mail com acento no domínio: contato@empóriodamusica.com.br; a capa traz contato@emporiodamusica.com.br, sem acento.",
+      "adotado": "contato@emporiodamusica.com.br",
+      "motivo": "Domínio de e-mail com acento é tecnicamente improvável; a forma sem acento, presente na capa, foi adotada como oficial."
+    }
+  ],
+  "secoes": [
+    {
+      "numero": "1",
+      "titulo": "Sobre a Empório da Música",
+      "topico": "about_store",
+      "uso_interno": false,
+      "texto": "A Empório da Música é uma loja especializada em instrumentos musicais, fundada em 2008 em Campo Grande, Mato Grosso do Sul. Com mais de 15 anos de atuação no mercado, somos referência regional na venda de instrumentos para músicos iniciantes, intermediários e profissionais.\nNosso catálogo abrange mais de 300 instrumentos de marcas nacionais e internacionais, incluindo guitarras, baixos, violões, baterias, teclados, instrumentos de sopro, cordas orquestrais e ukuleles. Trabalhamos exclusivamente com instrumentos musicais — não comercializamos acessórios como cordas, palhetas, cabos, cases, pedais ou amplificadores."
+    },
+    {
+      "numero": "1.1",
+      "titulo": "Missão",
+      "topico": "about_store",
+      "uso_interno": false,
+      "texto": "Democratizar o acesso a instrumentos musicais de qualidade na região Centro-Oeste, oferecendo atendimento especializado e preços competitivos, contribuindo para o desenvolvimento cultural e musical da comunidade."
+    },
+    {
+      "numero": "1.2",
+      "titulo": "Dados da Empresa",
+      "topico": "contact_address",
+      "uso_interno": false,
+      "texto": "Razão Social: Empório da Música Instrumentos Musicais Ltda.\nNome Fantasia: Empório da Música\nCNPJ: 12.345.678/0001-90\nEndereço: Rua 14 de Maio, 3200 — Centro, Campo Grande - MS, 79202-333\nTelefone / WhatsApp: (67) 3341-4444\nE-mail: contato@empóriodamusica.com.br\nFundação: 2008"
+    },
+    {
+      "numero": "2",
+      "titulo": "Horário de Funcionamento",
+      "topico": "hours",
+      "uso_interno": false,
+      "texto": "O atendimento presencial na loja segue os horários abaixo. O atendimento via WhatsApp segue o mesmo horário, com respostas automáticas fora do expediente.\nSegunda a Sexta-feira: 09:00 às 18:00\nSábado: 09:00 às 13:00\nDomingo e Feriados: Fechado\nEm datas especiais (Black Friday, Aniversário da Loja, Natal), o horário pode ser estendido. Alterações serão comunicadas com antecedência nas redes sociais e no atendimento via WhatsApp."
+    },
+    {
+      "numero": "3",
+      "titulo": "Formas de Pagamento",
+      "topico": "payment",
+      "uso_interno": false,
+      "texto": "Aceitamos as seguintes formas de pagamento para compras presenciais e online:\nPIX: Pagamento à vista — 5% de desconto sobre o preço de tabela\nCartão de Débito: Pagamento à vista — Todas as bandeiras aceitas\nCartão de Crédito: Até 12x sem juros — Parcela mínima de R$ 100,00\nBoleto Bancário: Pagamento à vista — Compensação em até 3 dias úteis"
+    },
+    {
+      "numero": "3.1",
+      "titulo": "Regras de Parcelamento",
+      "topico": "payment",
+      "uso_interno": false,
+      "texto": "• Parcelamento em até 3x: sem juros, sem valor mínimo de parcela (exceto abaixo de R$ 50,00).\n• Parcelamento de 4x a 6x: sem juros, parcela mínima de R$ 80,00.\n• Parcelamento de 7x a 12x: sem juros, parcela mínima de R$ 100,00.\n• Combinação de formas de pagamento: permitida (ex.: PIX + cartão) para compras acima de R$ 2.000,00."
+    },
+    {
+      "numero": "4",
+      "titulo": "Política de Trocas e Devoluções",
+      "topico": "returns_exchanges",
+      "uso_interno": false,
+      "texto": "A Empório da Música segue as diretrizes do Código de Defesa do Consumidor (Lei nº 8.078/90) e oferece condições claras para trocas e devoluções."
+    },
+    {
+      "numero": "4.1",
+      "titulo": "Direito de Arrependimento (Compras Online)",
+      "topico": "returns_exchanges",
+      "uso_interno": false,
+      "texto": "• O cliente pode solicitar a devolução em até 7 (sete) dias corridos após o recebimento do produto, sem necessidade de justificativa.\n• O produto deve estar em sua embalagem original, sem sinais de uso, com todos os acessórios e manuais.\n• O reembolso será realizado na mesma forma de pagamento original em até 10 dias úteis.\n• O frete de devolução é por conta da loja em caso de arrependimento."
+    },
+    {
+      "numero": "4.2",
+      "titulo": "Trocas por Defeito",
+      "topico": "returns_exchanges",
+      "uso_interno": false,
+      "texto": "• Produtos com defeito de fabricação podem ser trocados em até 30 (trinta) dias corridos após a compra.\n• Após os 30 dias, o cliente deve acionar a garantia diretamente com o fabricante. A Empório da Música pode intermediar o processo mediante solicitação.\n• Danos causados por mau uso, quedas, exposição a umidade excessiva ou modificações não autorizadas não são cobertos."
+    },
+    {
+      "numero": "4.3",
+      "titulo": "Trocas por Preferência",
+      "topico": "returns_exchanges",
+      "uso_interno": false,
+      "texto": "• Trocas por preferência (cor, modelo, tamanho) são permitidas em até 7 dias, mediante disponibilidade do produto desejado.\n• O produto deve estar em perfeito estado e na embalagem original.\n• Diferenças de valor serão cobradas ou reembolsadas conforme o caso."
+    },
+    {
+      "numero": "4.4",
+      "titulo": "Itens Não Elegíveis para Troca",
+      "topico": "returns_exchanges",
+      "uso_interno": false,
+      "texto": "• Instrumentos com personalização ou ajustes sob encomenda (setup, regulagem especial).\n• Produtos adquiridos em promoções de liquidação com aviso explícito de \"venda final\".\n• Boquilhas de instrumentos de sopro, por questões de higiene."
+    },
+    {
+      "numero": "5",
+      "titulo": "Política de Frete e Entregas",
+      "topico": "shipping",
+      "uso_interno": false,
+      "texto": ""
+    },
+    {
+      "numero": "5.1",
+      "titulo": "Entregas na Região Metropolitana de Campo Grande",
+      "topico": "shipping",
+      "uso_interno": false,
+      "texto": "• Frete grátis para pedidos acima de R$ 500,00.\n• Para pedidos abaixo de R$ 500,00, taxa fixa de R$ 35,00.\n• Prazo de entrega: 1 a 3 dias úteis.\n• Entrega realizada por motoboy próprio. O cliente será contactado por telefone antes da entrega."
+    },
+    {
+      "numero": "5.2",
+      "titulo": "Entregas para Outras Cidades",
+      "topico": "shipping",
+      "uso_interno": false,
+      "texto": "Utilizamos os serviços dos Correios (PAC e SEDEX) e da transportadora Jadlog para envios fora da região metropolitana de Campo Grande.\nPAC (Correios): 5 a 12 dias úteis — Sim — Incluído\nSEDEX (Correios): 2 a 5 dias úteis — Sim — Incluído\nJadlog (.package): 3 a 8 dias úteis — Sim — Incluído\nO valor do frete é calculado automaticamente com base no CEP de destino, peso e dimensões do produto. Instrumentos de grande porte (baterias acústicas, pianos digitais, contrabaixos) podem exigir frete especial com cotação individual.\nTodos os envios incluem seguro contra extravios e danos durante o transporte. Em caso de avaria, o cliente deve recusar o recebimento e entrar em contato imediatamente com a loja."
+    },
+    {
+      "numero": "5.3",
+      "titulo": "Código de Rastreamento",
+      "topico": "tracking",
+      "uso_interno": false,
+      "texto": "O código de rastreamento é enviado automaticamente por e-mail e WhatsApp assim que o pedido é despachado. O formato padrão é BR seguido de 9 caracteres alfanuméricos e BR (exemplo: BR4K7M2X9P1BR). O rastreamento pode ser consultado diretamente no site dos Correios ou da Jadlog."
+    },
+    {
+      "numero": "6",
+      "titulo": "Promoções e Descontos",
+      "topico": "promotions",
+      "uso_interno": false,
+      "texto": ""
+    },
+    {
+      "numero": "6.1",
+      "titulo": "Tipos de Promoção",
+      "topico": "promotions",
+      "uso_interno": false,
+      "texto": "A Empório da Música realiza promoções periódicas ao longo do ano. As principais campanhas incluem:\n• Aniversário da Loja (Agosto): descontos de 10% a 25% em itens selecionados.\n• Black Friday (Novembro): descontos de 15% a 30% em todo o catálogo.\n• Volta às Aulas (Fevereiro): descontos especiais em instrumentos para estudantes.\n• Queima de Estoque: promoções pontuais para renovação de catálogo.\n• Semana do Músico: promoções na semana do Dia do Músico (22 de novembro)."
+    },
+    {
+      "numero": "6.2",
+      "titulo": "Regras de Promoções",
+      "topico": "promotions",
+      "uso_interno": false,
+      "texto": "Cumulatividade: promoções não são cumulativas. O desconto de PIX (5%) não se aplica sobre preços já promocionais.\nEstoque: promoções estão sujeitas à disponibilidade de estoque. Produtos esgotados durante a promoção não geram direito a rain check (reserva de preço).\nComunicação: preços promocionais devem sempre ser apresentados junto ao preço original e o percentual de desconto, para total transparência ao cliente."
+    },
+    {
+      "numero": "7",
+      "titulo": "Atendimento via WhatsApp",
+      "topico": null,
+      "uso_interno": true,
+      "texto": "O canal de WhatsApp (67) 3321-4500 é o principal meio de atendimento remoto da Empório da Música. O atendimento pode ser realizado por atendentes humanos ou pelo assistente virtual."
+    },
+    {
+      "numero": "7.1",
+      "titulo": "Diretrizes de Atendimento",
+      "topico": null,
+      "uso_interno": true,
+      "texto": "Tom de voz: informal mas profissional. O cliente deve se sentir acolhido, como se estivesse conversando com um amigo que entende de música. Evitar linguagem excessivamente formal ou robotizada.\nTempo de resposta: máximo de 5 minutos durante o horário de funcionamento. Fora do expediente, o assistente virtual deve informar o horário de retorno.\nInformações precisas: nunca fornecer informações sobre preços, estoque ou prazos sem consultar o sistema. Informações incorretas geram frustração e podem configurar propaganda enganosa.\nEscopo: o atendente deve informar que a loja trabalha exclusivamente com instrumentos musicais. Pedidos de acessórios (cordas, cabos, palhetas, pedais, amplificadores, cases) devem ser educadamente redirecionados. Sugerir lojas parceiras quando possível."
+    },
+    {
+      "numero": "7.2",
+      "titulo": "Fluxo de Atendimento Padrão",
+      "topico": null,
+      "uso_interno": true,
+      "texto": "1. Saudação: cumprimentar o cliente pelo nome (se disponível) e perguntar como pode ajudar.\n2. Entendimento: identificar a necessidade do cliente (busca de produto, dúvida, rastreamento, reclamação).\n3. Consulta: buscar no sistema as informações relevantes (produto, estoque, promoção, pedido).\n4. Resposta: apresentar as opções de forma clara e objetiva, com preços e condições.\n5. Fechamento: confirmar se o cliente precisa de mais alguma coisa e encerrar com cordialidade."
+    },
+    {
+      "numero": "7.3",
+      "titulo": "Situações Especiais",
+      "topico": null,
+      "uso_interno": true,
+      "texto": "Produto fora de estoque: informar que o produto está temporariamente indisponível e sugerir alternativas semelhantes que estejam disponíveis. Nunca confirmar disponibilidade sem verificar o estoque atual.\nProduto descontinuado: informar que o produto não faz mais parte do catálogo e oferecer modelos equivalentes ou sucessores.\nPromoção expirada: caso o cliente pergunte sobre uma promoção, verificar se ela encontra-se ativa no sistema. Se a promoção estiver vencida, informar com transparência e apresentar o preço atual. Nunca prometer um desconto que não está mais vigente.\nReclamação: ouvir o cliente com empatia, registrar a reclamação e encaminhar para o responsável. Prazo de retorno: 24 horas úteis."
+    },
+    {
+      "numero": "8",
+      "titulo": "Garantia",
+      "topico": "warranty",
+      "uso_interno": false,
+      "texto": ""
+    },
+    {
+      "numero": "8.1",
+      "titulo": "Garantia Legal",
+      "topico": "warranty",
+      "uso_interno": false,
+      "texto": "Conforme o Código de Defesa do Consumidor, todos os produtos possuem garantia legal de 90 (noventa) dias contra defeitos de fabricação, contados a partir da data de recebimento pelo cliente."
+    },
+    {
+      "numero": "8.2",
+      "titulo": "Garantia do Fabricante",
+      "topico": "warranty",
+      "uso_interno": false,
+      "texto": "Além da garantia legal, a maioria dos fabricantes oferece garantia própria que pode variar de 6 meses a 2 anos. Os prazos e condições específicos estão detalhados no certificado de garantia que acompanha cada produto."
+    },
+    {
+      "numero": "8.3",
+      "titulo": "O que Não Cobre a Garantia",
+      "topico": "warranty",
+      "uso_interno": false,
+      "texto": "• Desgaste natural de peças (trastes, cordas, feltros, palhetas de sopro).\n• Danos por mau uso, queda, exposição a condições climáticas extremas.\n• Modificações ou reparos realizados por terceiros não autorizados.\n• Danos estéticos que não afetem a funcionalidade do instrumento."
+    },
+    {
+      "numero": "9",
+      "titulo": "Privacidade e Proteção de Dados",
+      "topico": "privacy",
+      "uso_interno": false,
+      "texto": "A Empório da Música está em conformidade com a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018). Os dados pessoais coletados durante o atendimento (nome, telefone, e-mail, endereço) são utilizados exclusivamente para:\n• Processamento e entrega de pedidos.\n• Comunicação sobre status de pedidos e rastreamento.\n• Envio de promoções e novidades (mediante consentimento explícito do cliente).\n• Cumprimento de obrigações legais e fiscais.\nDados de clientes não são compartilhados com terceiros para fins de marketing. O cliente pode solicitar a exclusão de seus dados a qualquer momento entrando em contato pelo WhatsApp ou e-mail."
+    },
+    {
+      "numero": "10",
+      "titulo": "Disposições Finais",
+      "topico": null,
+      "uso_interno": true,
+      "texto": "Este manual é um documento interno da Empório da Música e deve ser utilizado como referência por todos os membros da equipe de atendimento, incluindo o assistente virtual. As políticas descritas neste documento estão sujeitas a atualizações periódicas.\nEm caso de dúvidas sobre a aplicação de qualquer política, o atendente deve consultar a gerência antes de fornecer informações ao cliente. O objetivo é sempre garantir transparência, precisão e a melhor experiência possível para o cliente."
+    },
+    {
+      "numero": "1",
+      "titulo": "Escopo de Atendimento (trecho da seção 1)",
+      "topico": "service_scope",
+      "uso_interno": false,
+      "texto": "Trabalhamos exclusivamente com instrumentos musicais — não comercializamos acessórios como cordas, palhetas, cabos, cases, pedais ou amplificadores."
+    }
+  ]
+}

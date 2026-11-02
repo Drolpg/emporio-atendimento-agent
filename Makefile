@@ -1,4 +1,4 @@
-.PHONY: setup check test lint fmt
+.PHONY: setup check test lint fmt policies
 
 setup:
 	uv sync
@@ -14,3 +14,6 @@ lint:
 
 fmt:
 	bash scripts/fmt.sh
+
+policies:
+	bash scripts/policies.sh
