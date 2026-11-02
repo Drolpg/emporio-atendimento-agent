@@ -37,7 +37,12 @@ class ToolCall:
 
 @dataclass(frozen=True)
 class LlmReply:
-    """Resposta do modelo: texto e/ou chamadas de ferramenta, nunca ambos vazios."""
+    """Resposta do modelo: texto e/ou chamadas de ferramenta.
+
+    Pode vir totalmente vazia (`text=None`, `tool_calls=()`) quando o
+    provedor manda `content` vazio sem nenhuma chamada de ferramenta; quem
+    consome a resposta decide como tratar esse caso.
+    """
 
     text: str | None
     tool_calls: tuple[ToolCall, ...] = ()
@@ -67,10 +72,18 @@ def _status_code(exc: Exception) -> int | None:
 
 
 def _retry_after_seconds(exc: Exception) -> float | None:
-    """Extrai o `retry-after` (em segundos) de uma excecao de `429`, se vier."""
-    response = getattr(exc, "response", None)
-    headers = getattr(response, "headers", None)
-    value = headers.get("retry-after") if headers is not None else None
+    """Extrai o `retry-after` (em segundos) de uma excecao de `429`, se vier.
+
+    A leitura e best-effort: qualquer falha ao acessar `response`/`headers`
+    (ex.: objeto sem `.get`, ou `.get` que levanta) vira `None` em vez de
+    propagar, para cair no backoff fixo sem derrubar o turno.
+    """
+    try:
+        response = getattr(exc, "response", None)
+        headers = getattr(response, "headers", None)
+        value = headers.get("retry-after") if headers is not None else None
+    except Exception:  # noqa: BLE001 - leitura de cabecalho e best-effort
+        return None
     if value is None:
         return None
     try:
@@ -79,11 +92,26 @@ def _retry_after_seconds(exc: Exception) -> float | None:
         return None
 
 
-def _is_retryable(status_code: int | None) -> bool:
-    """Timeout/erro de conexao (sem status), `429` e `5xx` valem nova tentativa."""
-    if status_code is None:
-        return True
+# Prefixos de modulo que identificam uma excecao vinda do SDK ou da camada de
+# transporte HTTP, e nao um bug no nosso codigo. Cobre "httpx2", a variante
+# usada neste ambiente, pelo prefixo comum "httpx".
+_TRANSPORT_MODULE_PREFIXES = ("openai", "httpx", "httpcore", "anyio")
+
+
+def _is_retryable_status(status_code: int) -> bool:
+    """`429` e `5xx` valem nova tentativa; demais `4xx` sao erro do cliente."""
     return status_code == 429 or status_code >= 500
+
+
+def _is_transport_error(exc: Exception) -> bool:
+    """Decide se a excecao (sem `status_code`) vem do SDK/transporte, por origem.
+
+    Classifica pelo modulo da classe, nao pela hierarquia exata do `openai`:
+    assim nao acopla a uma versao do SDK. Qualquer outra excecao (bug no
+    nosso codigo, erro de programacao) nao e considerada falha do provedor.
+    """
+    module = type(exc).__module__ or ""
+    return module.startswith(_TRANSPORT_MODULE_PREFIXES)
 
 
 def _safe_json_loads(raw: str) -> dict[str, Any]:
@@ -164,9 +192,16 @@ class OpenAiCompatibleClient:
                 response = self._client.chat.completions.create(**kwargs)
             except Exception as exc:  # noqa: BLE001 - reclassificado abaixo, sem repassar o original
                 status_code = _status_code(exc)
-                if not _is_retryable(status_code):
-                    detail = f" (status {status_code})" if status_code else ""
-                    raise LlmError(f"O provedor de LLM recusou a requisicao{detail}.") from None
+                if status_code is not None:
+                    if not _is_retryable_status(status_code):
+                        raise LlmError(
+                            f"O provedor de LLM recusou a requisicao (status {status_code})."
+                        ) from None
+                elif not _is_transport_error(exc):
+                    # Nao vem do SDK nem da camada de transporte: e bug no nosso
+                    # codigo (ex.: argumento invalido), nao falha do provedor.
+                    # Propaga como esta, sem repetir, sem dormir e sem mascarar.
+                    raise
 
                 if attempt == self._max_attempts:
                     raise LlmUnavailable(
