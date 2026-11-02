@@ -76,6 +76,23 @@ class FakeConnectionError(Exception):
     """Imita um erro de conexao/timeout do SDK: sem status_code nenhum."""
 
 
+# O SDK real usa "httpx2" (variante usada neste ambiente) como modulo das
+# excecoes de transporte; simulamos isso aqui para nao depender do pacote
+# de verdade nos testes.
+FakeConnectionError.__module__ = "httpx2._exceptions"
+
+
+class _HeadersWithoutGet:
+    """Simula um objeto de headers sem o metodo `.get` (ex.: tipo inesperado)."""
+
+
+class _HeadersThatRaiseOnGet:
+    """Simula um objeto de headers cujo `.get` levanta em vez de devolver `None`."""
+
+    def get(self, _name: str) -> str:
+        raise RuntimeError("headers corrompidos")
+
+
 class _FakeCompletions:
     def __init__(self, script: list[Any]) -> None:
         self._script = list(script)
@@ -294,6 +311,67 @@ class TestOpenAiCompatibleClientResilience:
             sut.complete([{"role": "user", "content": "oi"}])
 
         assert sleeps == []
+
+    def test_bug_in_our_code_propagates_without_retry_or_masking(self) -> None:
+        """TypeError nosso (ex.: argumento invalido passado ao SDK) nao e provedor."""
+        client = FakeOpenAiClient([TypeError("bug nosso: argumento inesperado 'tolls'")])
+        sleeps: list[float] = []
+        sut = OpenAiCompatibleClient(
+            _settings(), client=client, sleep=sleeps.append, max_attempts=3
+        )
+
+        with pytest.raises(TypeError, match="tolls"):
+            sut.complete([{"role": "user", "content": "oi"}])
+
+        assert sleeps == []
+        assert len(client.calls) == 1
+
+    def test_transport_origin_error_without_status_code_is_retried(self) -> None:
+        """Excecao com `__module__` de transporte, mesmo sem status, continua repetindo."""
+        client = FakeOpenAiClient(
+            [
+                FakeConnectionError("falhou"),
+                FakeConnectionError("falhou"),
+                FakeConnectionError("falhou"),
+            ]
+        )
+        sleeps: list[float] = []
+        sut = OpenAiCompatibleClient(
+            _settings(), client=client, sleep=sleeps.append, max_attempts=3
+        )
+
+        with pytest.raises(LlmUnavailable):
+            sut.complete([{"role": "user", "content": "oi"}])
+
+        assert len(sleeps) == 2
+
+    def test_rate_limit_falls_back_to_backoff_when_headers_has_no_get(self) -> None:
+        error = FakeApiStatusError("limite", status_code=429)
+        error.response.headers = _HeadersWithoutGet()
+        client = FakeOpenAiClient([error, _make_response("ok")])
+        sleeps: list[float] = []
+        sut = OpenAiCompatibleClient(
+            _settings(), client=client, sleep=sleeps.append, max_attempts=3
+        )
+
+        result = sut.complete([{"role": "user", "content": "oi"}])
+
+        assert result.text == "ok"
+        assert sleeps == [1.0]
+
+    def test_rate_limit_falls_back_to_backoff_when_headers_get_raises(self) -> None:
+        error = FakeApiStatusError("limite", status_code=429)
+        error.response.headers = _HeadersThatRaiseOnGet()
+        client = FakeOpenAiClient([error, _make_response("ok")])
+        sleeps: list[float] = []
+        sut = OpenAiCompatibleClient(
+            _settings(), client=client, sleep=sleeps.append, max_attempts=3
+        )
+
+        result = sut.complete([{"role": "user", "content": "oi"}])
+
+        assert result.text == "ok"
+        assert sleeps == [1.0]
 
     def test_error_messages_never_contain_the_api_key(self) -> None:
         api_key = "segredo-super-secreto"
