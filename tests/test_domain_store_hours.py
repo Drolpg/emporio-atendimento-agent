@@ -7,7 +7,7 @@ from datetime import datetime, time
 import pytest
 
 from emporio.config import STORE_TZ
-from emporio.domain.store_hours import StoreStatus, store_status
+from emporio.domain.store_hours import StoreStatus, add_business_hours, store_status
 
 
 class TestNaiveDatetimeRejected:
@@ -117,3 +117,62 @@ class TestTimezoneNormalization:
         moment = datetime(2026, 2, 16, 13, 0, tzinfo=ZoneInfo("UTC"))
         result = store_status(moment)
         assert result.is_open is True
+
+
+class TestAddBusinessHoursNaiveAndNegative:
+    """Validacao de entrada de `add_business_hours`."""
+
+    def test_naive_datetime_raises(self):
+        """Datetime ingenuo deve gerar ValueError."""
+        naive = datetime(2026, 2, 16, 9, 0)
+        with pytest.raises(ValueError):
+            add_business_hours(naive, 1)
+
+    def test_negative_hours_raises(self):
+        """Horas negativas nao tem caso de uso neste produto; gera ValueError."""
+        moment = datetime(2026, 2, 16, 9, 0, tzinfo=STORE_TZ)
+        with pytest.raises(ValueError):
+            add_business_hours(moment, -1)
+
+
+class TestAddBusinessHoursEdgeCases:
+    """Casos de borda do avanco de horas de expediente (prazo de 24h uteis, RF-10)."""
+
+    def test_zero_hours_dentro_do_expediente_fica_no_mesmo_momento(self):
+        """Segunda 09:00 + 0h = segunda 09:00."""
+        moment = datetime(2026, 2, 16, 9, 0, tzinfo=STORE_TZ)  # segunda-feira
+        result = add_business_hours(moment, 0)
+        assert result == moment
+
+    def test_segunda_09h_mais_9h_fecha_no_mesmo_dia(self):
+        """Segunda 09:00 + 9h = segunda 18:00 (um dia inteiro de expediente)."""
+        moment = datetime(2026, 2, 16, 9, 0, tzinfo=STORE_TZ)
+        result = add_business_hours(moment, 9)
+        assert result == datetime(2026, 2, 16, 18, 0, tzinfo=STORE_TZ)
+
+    def test_segunda_17h_mais_2h_vira_terca_10h(self):
+        """Segunda 17:00 + 2h: 1h fecha a segunda, 1h abre terca = terca 10:00."""
+        moment = datetime(2026, 2, 16, 17, 0, tzinfo=STORE_TZ)
+        result = add_business_hours(moment, 2)
+        assert result == datetime(2026, 2, 17, 10, 0, tzinfo=STORE_TZ)
+
+    def test_sabado_12h_mais_2h_pula_domingo_vira_segunda_10h(self):
+        """Sabado 12:00 + 2h: 1h fecha o sabado, domingo fechado, 1h abre segunda = segunda 10:00."""
+        moment = datetime(2026, 2, 21, 12, 0, tzinfo=STORE_TZ)  # sabado
+        result = add_business_hours(moment, 2)
+        assert result == datetime(2026, 2, 23, 10, 0, tzinfo=STORE_TZ)  # segunda
+
+    def test_domingo_10h_mais_1h_conta_so_a_partir_da_abertura_de_segunda(self):
+        """Domingo fechado: a contagem comeca na proxima abertura (segunda 09:00)."""
+        moment = datetime(2026, 2, 22, 10, 0, tzinfo=STORE_TZ)  # domingo
+        result = add_business_hours(moment, 1)
+        assert result == datetime(2026, 2, 23, 10, 0, tzinfo=STORE_TZ)  # segunda 10:00
+
+    def test_sexta_17h_mais_24h_vira_quarta_10h(self):
+        """Sexta 17:00 + 24h uteis: 1h (sex) + 4h (sab) + 9h (seg) + 9h (ter) + 1h (qua) = 24h.
+
+        Domingo fica fechado, entao a 24a hora cai na quarta-feira as 10:00.
+        """
+        moment = datetime(2026, 2, 20, 17, 0, tzinfo=STORE_TZ)  # sexta-feira
+        result = add_business_hours(moment, 24)
+        assert result == datetime(2026, 2, 25, 10, 0, tzinfo=STORE_TZ)  # quarta-feira
