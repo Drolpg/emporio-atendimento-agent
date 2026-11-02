@@ -119,11 +119,14 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
                 dt = datetime.strptime(store_today_str, "%Y-%m-%d")
                 # Adicionar hora 10:00 em STORE_TZ
                 store_today = dt.replace(hour=10, minute=0, second=0, tzinfo=STORE_TZ)
-            # Tentar formato AAAA-MM-DDTHH:MM
+            # Tentar formato AAAA-MM-DDTHH:MM ou AAAA-MM-DDTHH:MM+HH:MM
             elif "T" in store_today_str:
                 dt = datetime.fromisoformat(store_today_str)
-                # Normalizar para STORE_TZ
-                store_today = dt.replace(tzinfo=STORE_TZ)
+                # Se tem offset explícito (aware), converter; se ingênuo, é hora de parede
+                if dt.tzinfo is not None:
+                    store_today = dt.astimezone(STORE_TZ)
+                else:
+                    store_today = dt.replace(tzinfo=STORE_TZ)
             else:
                 raise ValueError(f"Formato inválido: {store_today_str}")
         except (ValueError, AttributeError) as e:
