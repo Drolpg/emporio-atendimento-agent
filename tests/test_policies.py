@@ -153,6 +153,22 @@ class TestStoreInfoFixture:
         assert book.store.tax_id == "12.345.678/0001-90"
 
 
+class TestNormalizacaoNoTextoDasSecoes:
+    """P-01/P-02 normalizam telefone e e-mail tambem dentro do texto das secoes.
+
+    O valor divergente do manual (dominio de e-mail acentuado) continua
+    rastreavel em `divergencias`, mas nao pode aparecer no texto que
+    `get_policy` devolve ao cliente.
+    """
+
+    def test_nenhum_topico_contem_o_dominio_acentuado(self, book: PolicyBook):
+        assert "empóriodamusica" not in _all_topics_text(book)
+
+    def test_contact_address_contem_o_email_adotado(self, book: PolicyBook):
+        text = _joined_text(book, "contact_address")
+        assert "contato@emporiodamusica.com.br" in text
+
+
 class TestDivergencias:
     """O JSON registra as divergencias P-01 (telefone) e P-02 (email)."""
 
