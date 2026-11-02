@@ -11,7 +11,7 @@ from datetime import date, datetime, time, timedelta
 
 from emporio.config import STORE_TZ
 
-__all__ = ["StoreStatus", "store_status"]
+__all__ = ["StoreStatus", "store_status", "add_business_hours"]
 
 
 def _hours_for_weekday(weekday: int) -> tuple[time, time] | None:
@@ -80,3 +80,37 @@ def store_status(moment: datetime) -> StoreStatus:
         closes_at=closes_at,
         next_opening=next_opening,
     )
+
+
+def add_business_hours(moment: datetime, hours: int) -> datetime:
+    """Avanca `hours` horas de expediente a partir de `moment` (RF-10, prazo de 24h uteis).
+
+    Respeita o horario da loja (seg a sex 09:00-18:00, sab 09:00-13:00,
+    domingo fechado). Se `moment` cair fora do expediente, a contagem
+    comeca na proxima abertura. `moment` precisa ser aware; ingenuo gera
+    `ValueError`. `hours` negativo tambem gera `ValueError` (nao ha caso de
+    uso para "horas uteis no passado" neste produto).
+    """
+    if moment.tzinfo is None:
+        raise ValueError("moment deve ser aware (ter tzinfo)")
+    if hours < 0:
+        raise ValueError("hours nao pode ser negativo")
+
+    moment = moment.astimezone(STORE_TZ)
+    status = store_status(moment)
+    current = moment if status.is_open else status.next_opening
+    assert current is not None  # fechado sempre tem proxima abertura
+
+    remaining = timedelta(hours=hours)
+    while True:
+        hours_today = _hours_for_weekday(current.weekday())
+        assert hours_today is not None  # current e sempre um momento de expediente
+        _, closes_at = hours_today
+        day_close = datetime.combine(current.date(), closes_at, tzinfo=STORE_TZ)
+        available_today = day_close - current
+
+        if remaining <= available_today:
+            return current + remaining
+
+        remaining -= available_today
+        current = _next_opening(day_close)

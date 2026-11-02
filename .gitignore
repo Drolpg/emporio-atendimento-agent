@@ -222,3 +222,4 @@ __marimo__/
 # Emporio da Musica — dados e histórico locais
 data/*.sqlite3
 data/*.sqlite3-journal
+data/handoffs.jsonl

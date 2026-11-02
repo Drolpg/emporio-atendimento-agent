@@ -253,9 +253,7 @@ class TestConformidadeSchemaHandler:
             missing = schema_params - handler_params
             assert not missing, f"{spec.name}: parametros do schema sem handler: {missing}"
 
-    def test_todo_parametro_obrigatorio_do_handler_esta_no_required(
-        self, registry: ToolRegistry
-    ):
+    def test_todo_parametro_obrigatorio_do_handler_esta_no_required(self, registry: ToolRegistry):
         for spec in registry.specs.values():
             signature = inspect.signature(spec.handler)
             required = set(spec.parameters.get("required", []))
@@ -276,11 +274,11 @@ class TestConformidadeSchemaHandler:
             properties = set(spec.parameters.get("properties", {}))
             required = spec.parameters.get("required", [])
             for name in required:
-                assert name in properties, f"{spec.name}: '{name}' em required mas nao em properties"
+                assert name in properties, (
+                    f"{spec.name}: '{name}' em required mas nao em properties"
+                )
 
-    def test_type_object_e_toda_propriedade_tem_type_e_description(
-        self, registry: ToolRegistry
-    ):
+    def test_type_object_e_toda_propriedade_tem_type_e_description(self, registry: ToolRegistry):
         for spec in registry.specs.values():
             assert spec.parameters["type"] == "object", f"{spec.name}: parameters.type != object"
             for prop_name, prop_schema in spec.parameters.get("properties", {}).items():

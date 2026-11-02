@@ -157,7 +157,7 @@ class TestAddBusinessHoursEdgeCases:
         assert result == datetime(2026, 2, 17, 10, 0, tzinfo=STORE_TZ)
 
     def test_sabado_12h_mais_2h_pula_domingo_vira_segunda_10h(self):
-        """Sabado 12:00 + 2h: 1h fecha o sabado, domingo fechado, 1h abre segunda = segunda 10:00."""
+        """Sabado 12:00 + 2h: 1h fecha o sabado, domingo fechado, 1h abre segunda as 10:00."""
         moment = datetime(2026, 2, 21, 12, 0, tzinfo=STORE_TZ)  # sabado
         result = add_business_hours(moment, 2)
         assert result == datetime(2026, 2, 23, 10, 0, tzinfo=STORE_TZ)  # segunda
