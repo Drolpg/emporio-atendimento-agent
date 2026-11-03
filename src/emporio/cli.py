@@ -9,6 +9,7 @@ que chama `load_dotenv()`: `load_settings` nao faz isso de proposito, para o
 from __future__ import annotations
 
 import argparse
+import contextlib
 import sys
 from collections.abc import Mapping, Sequence
 from typing import TextIO
@@ -224,6 +225,21 @@ def _run_chat(
             console.print(tool_line, style="dim")
 
 
+def _ensure_utf8_streams() -> None:
+    """Forca utf-8 em stdout/stderr, para o portugues com acento nao virar lixo.
+
+    Alguns terminais (ex.: `cmd`/PowerShell no Windows) abrem os streams numa
+    codificacao local que nao suporta todos os acentos. Melhor esforco: se o
+    stream nao aceitar `reconfigure` (ex.: capturado pelo `pytest`), ignora.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        with contextlib.suppress(ValueError, OSError):
+            reconfigure(encoding="utf-8")
+
+
 def main(
     argv: Sequence[str] | None = None,
     *,
@@ -239,6 +255,7 @@ def main(
     nem a rede; a entrada real do comando so usa `argv`.
     """
     load_dotenv()
+    _ensure_utf8_streams()
 
     parser = _build_parser()
     args = parser.parse_args(argv)
