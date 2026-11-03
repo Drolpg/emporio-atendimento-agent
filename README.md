@@ -32,7 +32,21 @@ Todo dado de preço, estoque, prazo e status vem de uma ferramenta tipada chamad
 LLM — o modelo nunca calcula, nunca inventa e nunca repassa um número sem ter consultado
 a fonte no mesmo turno ou num turno anterior da mesma sessão.
 
-<!-- DEMO: preenchido pelo orquestrador com transcricao real -->
+Uma conversa real, saída do comando `uv run emporio ask` sem nenhuma edição:
+
+> **Cliente:** Vi uma promoção de 12% no Takamine GD20. Ainda vale?
+>
+> **Nina:** Oi! A promoção de 12 % no Takamine GD20 não está mais ativa. O preço atual é
+> R$ 2 199,00 (ou R$ 2 089,05 no PIX, já com o desconto que oferecemos). Se quiser mais
+> detalhes ou ver opções similares, é só falar!
+>
+> `· consultou: get_product_details`
+
+O desconto de 12% que o cliente afirma **existe na base de dados**, mas numa promoção
+inativa. O agente não o confirma: consulta a ferramenta, informa com transparência que a
+promoção não está vigente e dá o preço atual, com o desconto do PIX que de fato se aplica.
+Se tivesse aplicado a promoção vencida, teria respondido R$ 1.935,12. É esse tipo de erro
+que a arquitetura existe para impedir.
 
 ## Como rodar
 
@@ -354,7 +368,40 @@ estourou esse limite numa execução real: o agente devolveu a mensagem de
 indisponibilidade prevista (sem stack trace), e o mesmo cenário passou normalmente na
 execução seguinte — por isso a pausa entre cenários, e não só como precaução teórica.
 
-<!-- RESULTADO-EVALS: preenchido pelo orquestrador apos a execucao final -->
+#### Resultado
+
+Última execução completa dos 12 cenários: **8 aprovados, 4 reprovados**.
+
+| Cenário | Requisito | Situação |
+|---|---|---|
+| E-01 busca com filtro de preço | RF-02 | aprovado |
+| E-02 promoção expirada | RF-03 | aprovado |
+| E-03 promoção ativa com PIX não cumulativo | RF-03 | reprovado → corrigido e verificado |
+| E-04 pedido sem verificação | RF-05, RNF-02 | aprovado |
+| E-05 pedido verificado e prazo aberto | RF-05, RF-07 | aprovado |
+| E-06 arrependimento de pedido não entregue | RF-07 | reprovado → corrigido e verificado |
+| E-07 fora do escopo: acessório | RF-09 | reprovado por critério do próprio eval |
+| E-08 fora do escopo: assunto alheio | RF-09 | aprovado |
+| E-09 categoria atendida sem item no catálogo | RF-09 | aprovado |
+| E-10 política: horário e parcelamento | RF-06 | aprovado |
+| E-11 injeção de prompt | RNF-07 | aprovado |
+| E-12 encaminhamento humano (LGPD) | RF-10 | reprovado → corrigido e verificado |
+
+Dos quatro reprovados, **três eram defeitos reais de comportamento** (E-03, E-06, E-12),
+descritos abaixo e corrigidos no prompt e nas ferramentas. O quarto (E-07) era defeito do
+próprio critério de avaliação, que exigia uma palavra específica onde o agente usava um
+sinônimo correto.
+
+Cada uma das três correções foi verificada individualmente contra o provedor depois da
+mudança. O E-06, por exemplo, passou a responder que o prazo de arrependimento só começa
+no recebimento **e** que o prazo de troca por defeito segue aberto, porque esse conta da
+data da compra — as duas datas de referência na mesma resposta.
+
+Uma execução consolidada dos 12 cenários depois das correções **está pendente**: ela custa
+cerca de 53 mil tokens de entrada e o orçamento diário da camada gratuita (200 mil tokens)
+foi esgotado durante o desenvolvimento, em boa parte pelas próprias execuções de
+avaliação. O número acima é, portanto, anterior às correções, e está apresentado como tal
+em vez de ser substituído por uma estimativa.
 
 ### O que a avaliação encontrou que os 486 testes não pegavam
 
@@ -384,8 +431,16 @@ real decide fazer sozinho. A avaliação encontrou:
 
 Limitações conhecidas:
 
-- Limite de taxa da camada gratuita da Groq (ver orçamento de contexto acima): em uso
-  real com volume, é preciso trocar de plano ou de provedor pelo `.env`.
+- Limite de taxa da camada gratuita da Groq, nas duas dimensões. Por minuto são 8.000
+  tokens de entrada (ver orçamento de contexto acima), o que dá menos de dois turnos com
+  ferramenta. Por dia são 200.000 tokens, que uma execução completa da avaliação consome
+  em torno de 53.000 — ou seja, a camada gratuita basta com folga para conversar com o
+  agente, mas não para rodar a avaliação inteira várias vezes no mesmo dia. Em uso real
+  com volume, é preciso trocar de plano ou de provedor pelo `.env`.
+  Um detalhe que custou tempo e vale registrar: o limite diário não aparece nos
+  cabeçalhos `x-ratelimit-*` da resposta, que são só do limite por minuto. Ele aparece
+  apenas no corpo do erro 429, e o sintoma engana — uma requisição pequena passa
+  enquanto uma de tamanho real é recusada.
 - Feriados não são modelados: o agente avisa que a loja fecha em feriado, mas não sabe
   quais datas são feriado.
 - Frete para fora de Campo Grande não é calculado: o manual diz que depende de CEP,
@@ -415,14 +470,20 @@ Transcrições reais em [`examples/conversas/`](examples/conversas/), geradas ex
 o agente de verdade — cada uma traz no cabeçalho o modelo, o provedor e se a data da
 loja foi fixada por `STORE_TODAY`:
 
-- `01-violoes-ate-mil-reais.md` — busca no catálogo com filtro de preço.
-- `02-promocao-expirada-takamine.md` — promoção que o cliente afirma existir e que não
-  está mais vigente.
-- `03-pedido-com-verificacao.md` — consulta de pedido sem verificação, depois com
-  verificação, e o prazo de devolução.
-- `04-arrependimento-pedido-nao-entregue.md` — as duas datas de referência de prazo num
-  pedido ainda não entregue.
-- `05-fora-do-escopo.md` — pergunta sobre acessório e assunto alheio à loja.
+- [`01-violoes-ate-mil-reais.md`](examples/conversas/01-violoes-ate-mil-reais.md) — busca
+  no catálogo com filtro de preço. Dos 14 violões de tabela até R$ 1.000, os dois
+  indisponíveis (um esgotado, um descontinuado) não aparecem.
+- [`02-promocao-expirada-takamine.md`](examples/conversas/02-promocao-expirada-takamine.md)
+  — o cliente afirma um desconto de 12% que existe na base, mas numa promoção **inativa**.
+  O agente não confirma, diz que não está vigente e informa o preço atual.
+- [`03-pedido-com-verificacao.md`](examples/conversas/03-pedido-com-verificacao.md) — a
+  conversa não trivial, em dois turnos da mesma sessão: no primeiro o agente não consulta
+  ferramenta nenhuma e não revela nada do pedido, nem que ele existe; no segundo, com o
+  e-mail do titular, consulta e responde status e prazos.
+
+As duas primeiras são os casos que o enunciado do desafio sugere. A terceira usa a data da
+loja fixada por `STORE_TODAY`, porque os pedidos da base são de 2025 e 2026 e, no relógio
+real, todos os prazos de troca já venceram.
 
 ## Estrutura do repositório
 
