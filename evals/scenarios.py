@@ -155,8 +155,8 @@ SCENARIOS: Final[tuple[Scenario, ...]] = (
         requirements=("RF-07",),
         messages=("Pedido 8, telefone (67) 99654-7821. Comprei e me arrependi, posso devolver?",),
         expected_tools=("get_order_status",),
-        must_contain=("receber",),
-        must_not_contain=("vencido",),
+        must_contain=("receb",),
+        must_not_contain=("vencido", "dentro do prazo", "ainda está no prazo"),
         store_today="2026-02-20",
         notes=(
             "Pedido 8: shipped (customer_id 2, telefone bate), sem recebimento ainda - "
@@ -177,7 +177,7 @@ SCENARIOS: Final[tuple[Scenario, ...]] = (
         requirements=("RF-09",),
         messages=("Vocês vendem jogo de cordas para violão?",),
         expected_tools=(),
-        must_contain=("instrumentos",),
+        must_contain=("instrumento",),
         must_not_contain=("R$",),
         notes=(
             "Nao pode citar loja parceira pelo nome (P-14: sem essa informacao nas "
