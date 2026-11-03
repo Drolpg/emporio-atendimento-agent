@@ -68,20 +68,66 @@ _MISSING_KEY_MESSAGE: Final[str] = (
 # toca a virgula decimal (que fica seguida de 1 ou 2 digitos apenas).
 _THOUSANDS_SEP_RE = re.compile(r"(?<=\d)[.,\s](?=\d{3}(?!\d))")
 _PERCENT_SPACE_RE = re.compile(r"(?<=\d)\s+(?=%)")
+# Centavos zerados sao opcionais: "R$ 100,00" e "R$ 100" sao o mesmo fato;
+# visto na execucao real contra o provedor (E-10), que escreveu "R$ 100"
+# sem o ",00". So remove a dupla zero decimal, nunca outro centavo.
+_ZERO_CENTS_SUFFIX_RE = re.compile(r",00$")
+_DECIMAL_CENTS_RE = re.compile(r",\d{1,2}$")
+# Hifens tipograficos (non-breaking hyphen, en/em dash, minus sign) viram o
+# hifen comum: visto na execucao real (E-01, E-04), o provedor escreveu
+# "RC‑104" e "e‑mail" com U+2011 em vez de "-" comum. Sem isso, um
+# nome de produto ou "e-mail" corretos reprovam por engano - mediria
+# formatacao, nao fidelidade.
+_TYPOGRAPHIC_HYPHEN_RE = re.compile("[‐‑‒–—−]")
 
 
 def _normalize_money(text: str) -> str:
-    """Normaliza `text` para comparacao tolerante de valores em dinheiro/percentual."""
+    """Normaliza `text` para comparacao tolerante de dinheiro/percentual/hifen."""
     normalized = normalize_text(text)
+    normalized = _TYPOGRAPHIC_HYPHEN_RE.sub("-", normalized)
     normalized = _THOUSANDS_SEP_RE.sub("", normalized)
     normalized = _PERCENT_SPACE_RE.sub("", normalized)
     return normalized
 
 
+def _fact_pattern(needle: str) -> re.Pattern[str]:
+    """Monta o padrao de busca de um fato, com fronteira numerica.
+
+    Comparacao por substring crua gera falso positivo em numero: "8%" aparece
+    dentro de "18%" e "R$ 100,00" (com os centavos zerados tratados como
+    opcionais) aparece dentro de "R$ 100,05". Os dois casos importam de
+    verdade aqui - o produto 94 tem 8% e o 90 tem 18%, e a parcela minima da
+    loja e exatamente R$ 100,00. Entao:
+
+    - centavos zerados no fim do fato viram grupo opcional, para casar tanto
+      "R$ 100,00" quanto "R$ 100" (o provedor escreve das duas formas);
+    - fato que comeca em digito exige que nao haja digito antes;
+    - fato que termina em digito exige que nao venha digito depois, nem uma
+      virgula decimal seguida de digito - e isso que separa "100" de "100,05".
+    """
+    normalized = _normalize_money(needle)
+    suffix = ""
+    if normalized[-1:].isdigit():
+        normalized = _ZERO_CENTS_SUFFIX_RE.sub("", normalized)
+        # Fato sem centavo explicito casa o valor com centavo zerado ("2199"
+        # casa "R$ 2.199,00"), mas nunca com centavo diferente de zero.
+        optional_cents = "" if _DECIMAL_CENTS_RE.search(normalized) else "(?:,00)?"
+        suffix = optional_cents + r"(?!\d|,\d)"
+
+    pattern = re.escape(normalized) + suffix
+    if normalized[:1].isdigit():
+        pattern = r"(?<!\d)" + pattern
+    return re.compile(pattern)
+
+
 def contains_fact(haystack: str, needle: str) -> bool:
-    """Diz se `needle` aparece em `haystack`, tolerando acento/caixa/espaco e
-    formatacao de dinheiro/percentual (separador de milhar, espaco antes de "%")."""
-    return _normalize_money(needle) in _normalize_money(haystack)
+    """Diz se `needle` aparece em `haystack` como o mesmo fato.
+
+    Tolera acento, caixa, espaco repetido, hifen tipografico, separador de
+    milhar, espaco antes de "%" e centavos zerados omitidos. Nao tolera numero
+    diferente: ver `_fact_pattern`.
+    """
+    return _fact_pattern(needle).search(_normalize_money(haystack)) is not None
 
 
 @dataclass(frozen=True)
@@ -263,7 +309,7 @@ def _format_result_line(result: ScenarioResult) -> str:
     return line
 
 
-def _print_report(results: Sequence[ScenarioResult]) -> None:
+def _print_report(results: Sequence[ScenarioResult], *, total_elapsed_seconds: float) -> None:
     for result in results:
         print(_format_result_line(result))
 
@@ -271,13 +317,12 @@ def _print_report(results: Sequence[ScenarioResult]) -> None:
     passed_count = sum(1 for r in evaluated if r.passed)
     failed_count = len(evaluated) - passed_count
     unavailable_count = len(results) - len(evaluated)
-    total_elapsed = sum(r.elapsed_seconds for r in results)
 
     print()
     print(
         f"Resumo: {passed_count} aprovado(s), {failed_count} falhou(aram), "
         f"{unavailable_count} não avaliado(s) de {len(results)} cenário(s) · "
-        f"{total_elapsed:.1f}s"
+        f"{total_elapsed_seconds:.1f}s (inclui a pausa entre cenários)"
     )
 
 
@@ -354,10 +399,12 @@ def main(
         print(f"Nenhum cenário encontrado para --only {args.only!r}.")
         return 2
 
+    run_started = time.monotonic()
     results = run_all(
         scenarios, settings=settings, sleep_seconds=sleep_seconds, llm=llm, sleep=sleep
     )
-    _print_report(results)
+    total_elapsed_seconds = time.monotonic() - run_started
+    _print_report(results, total_elapsed_seconds=total_elapsed_seconds)
 
     if args.json_path:
         _write_json(results, Path(args.json_path))

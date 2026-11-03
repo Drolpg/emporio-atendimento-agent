@@ -59,12 +59,20 @@ modelo formata número de jeitos diferentes na mesma resposta: `R$ 1.000`, `R$ 1
 `evals.runner.contains_fact`:
 
 1. Normaliza acento, caixa e espaço repetido (`emporio.textnorm.normalize_text`).
-2. Remove o separador de milhar — `.`, `,` ou espaço entre um dígito e um grupo de
+2. Troca hífen tipográfico (non-breaking hyphen, en/em dash, sinal de menos) pelo
+   hífen comum. Visto na execução real contra o provedor: o modelo escreveu
+   `"RC‑104"` e `"e‑mail"` com `U+2011` em vez do hífen comum — sem essa troca, um
+   nome de produto ou "e-mail" corretos reprovavam por acidente de codificação, não
+   por fidelidade.
+3. Remove o separador de milhar — `.`, `,` ou espaço entre um dígito e um grupo de
    exatamente 3 dígitos que não é seguido de outro dígito. Isso cobre `2.199` → `2199`,
    `2 199` → `2199`, mas **não** toca a vírgula decimal (`1935,12` fica `1935,12`,
    porque depois da vírgula vêm só 2 dígitos, não 3).
-3. Remove o espaço antes do sinal de `%` (`"12 %"` → `"12%"`).
-4. Verifica se o resultado normalizado do trecho esperado aparece como substring no
+4. Remove `,00` (centavos zerados) depois de um dígito. Visto na execução real: o
+   modelo escreveu `"R$ 100"` onde o esperado era `"R$ 100,00"` — mesmo valor, só sem
+   o decimal exato. Só remove a dupla zero; `,12`, por exemplo, nunca é afetado.
+5. Remove o espaço antes do sinal de `%` (`"12 %"` → `"12%"`).
+6. Verifica se o resultado normalizado do trecho esperado aparece como substring no
    resultado normalizado da resposta.
 
 A normalização é feita nos dois lados (o trecho esperado e a resposta), então o

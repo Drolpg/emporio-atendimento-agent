@@ -181,3 +181,38 @@ class TestMainSemChave:
         captured = capsys.readouterr()
         assert codigo == 2
         assert "chave" in captured.out.lower()
+
+
+class TestNormalizacaoDescobertaNaExecucaoReal:
+    """Casos que so apareceram rodando contra o provedor de verdade.
+
+    Cada um tem o par positivo (mesmo fato, formato diferente, deve casar) e o
+    negativo (valor diferente, nao pode casar) - sem o negativo, afrouxar a
+    comparacao deixaria passar preco errado.
+    """
+
+    @pytest.mark.parametrize(
+        ("resposta", "fato"),
+        [
+            ("Rozini RC\u2011104 Nylon", "Rozini RC-104"),  # hifen nao separavel
+            ("Tagima Memphis AC\u201139", "Tagima Memphis AC-39"),
+            ("informe seu e\u2011mail", "e-mail"),
+            ("Taylor 110e \u2013 R$ 5.519,08", "Taylor 110e - R$ 5.519,08"),  # en dash
+            ("parcela minima de R$ 100", "R$ 100,00"),  # centavos zerados omitidos
+            ("ate 12x de R$ 183,25", "R$ 183,25"),
+        ],
+    )
+    def test_casa_mesmo_fato_em_formato_diferente(self, resposta: str, fato: str) -> None:
+        assert contains_fact(resposta, fato)
+
+    @pytest.mark.parametrize(
+        ("resposta", "fato"),
+        [
+            ("R$ 21,99", "R$ 2.199,00"),  # separador nao pode colapsar valor diferente
+            ("R$ 100,05", "R$ 100,00"),  # centavo real nao e centavo zerado
+            ("R$ 1.935,12", "R$ 2.199,00"),  # preco da promocao inativa
+            ("desconto de 18%", "8%"),  # 18 nao contem 8 como fato isolado
+        ],
+    )
+    def test_nao_casa_valor_diferente(self, resposta: str, fato: str) -> None:
+        assert not contains_fact(resposta, fato)
