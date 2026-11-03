@@ -94,14 +94,10 @@ class TestAskGravaSoComSessao:
 class TestChatAbreEEncerraLimpo:
     """Criterio 13: `chat` com `/sair` na primeira linha abre e encerra limpo."""
 
-    def test_chat_sair_na_primeira_linha(
-        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
-    ):
+    def test_chat_sair_na_primeira_linha(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]):
         llm = ScriptedLlm([])
 
-        code = main(
-            ["chat"], env=_env(tmp_path), clock=_clock(), llm=llm, stdin=_stdin("/sair")
-        )
+        code = main(["chat"], env=_env(tmp_path), clock=_clock(), llm=llm, stdin=_stdin("/sair"))
 
         captured = capsys.readouterr()
         assert code == 0
@@ -170,9 +166,7 @@ class TestChaveVaziaAsk:
     ):
         llm = ScriptedLlm([])  # qualquer chamada levanta AssertionError
 
-        code = main(
-            ["ask", "Oi"], env=_env(tmp_path, api_key=""), clock=_clock(), llm=llm
-        )
+        code = main(["ask", "Oi"], env=_env(tmp_path, api_key=""), clock=_clock(), llm=llm)
 
         captured = capsys.readouterr()
         assert code == 2
@@ -193,7 +187,9 @@ class TestLinhaDeFerramentas:
             ]
         )
 
-        code = main(["ask", "Quais categorias vocês têm?"], env=_env(tmp_path), clock=_clock(), llm=llm)
+        code = main(
+            ["ask", "Quais categorias vocês têm?"], env=_env(tmp_path), clock=_clock(), llm=llm
+        )
 
         captured = capsys.readouterr()
         assert code == 0
