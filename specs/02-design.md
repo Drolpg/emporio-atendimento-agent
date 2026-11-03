@@ -67,6 +67,11 @@ Tópicos de `get_policy`: `about_store`, `contact_address`, `hours`, `payment`, 
 
 Erros de ferramenta retornam `{"error": código, "message": texto}` para o LLM tratar.
 
+Regra de desenho: valor que não se aplica ao caso (ex.: desconto do PIX com
+promoção ativa, parcela quando só cabe à vista, rastreio antes do despacho) é
+negado explicitamente, com o motivo, nunca omitido — campo ausente parece
+lacuna a preencher, e convida o modelo a calcular por conta própria.
+
 ## Regras de domínio
 - **Promoção**: preço final = tabela × (1 − desconto). Sempre exibida com preço original e percentual (manual 6.2).
 - **PIX**: 5% sobre o preço de tabela, apenas se não houver promoção ativa (não cumulativo, manual 6.2).
