@@ -90,6 +90,19 @@ def _alternative_summary(product: Product) -> JsonDict:
     }
 
 
+#  Valor que nao se aplica e dito explicitamente, com o motivo, nunca omitido:
+#  campo ausente parece lacuna a preencher, e o modelo tende a preencher com a
+#  regra generica da politica (ex.: os 5% do PIX) em vez de reconhecer que, para
+#  este produto, essa regra nao vale (RNF-01, manual 6.2 e 3.1).
+_PIX_DISCOUNT_MESSAGE = (
+    "O desconto do PIX não se aplica a este produto: ele tem promoção ativa, e "
+    "promoção e desconto do PIX não são cumulativos (manual de pagamentos, 6.2)."
+)
+_NO_INSTALLMENTS_MESSAGE = (
+    "Esse valor só permite pagamento à vista; não há parcelamento disponível para ele."
+)
+
+
 def _payment_block(price_quote: PriceQuote) -> JsonDict:
     """Bloco de condicoes de pagamento, a partir de uma `PriceQuote` do dominio."""
     block: JsonDict = {
@@ -108,12 +121,23 @@ def _payment_block(price_quote: PriceQuote) -> JsonDict:
             "final_price_brl": format_brl(price_quote.final_price),
             "final_price_cents": to_cents(price_quote.final_price),
         }
+
     if price_quote.pix_price is not None:
         block["pix_price_brl"] = format_brl(price_quote.pix_price)
         block["pix_price_cents"] = to_cents(price_quote.pix_price)
+        block["pix_discount_applies"] = True
+    else:
+        block["pix_discount_applies"] = False
+        block["pix_discount_message"] = _PIX_DISCOUNT_MESSAGE
+
     if price_quote.installment_value is not None:
         block["installment_value_brl"] = format_brl(price_quote.installment_value)
         block["installment_value_cents"] = to_cents(price_quote.installment_value)
+        block["allows_installments"] = True
+    else:
+        block["allows_installments"] = False
+        block["installment_value_message"] = _NO_INSTALLMENTS_MESSAGE
+
     return block
 
 

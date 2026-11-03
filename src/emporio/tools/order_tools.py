@@ -38,6 +38,15 @@ _VERIFICATION_FAILED_MESSAGE = (
     "e-mail ou telefone cadastrado no pedido para eu poder consultar."
 )
 
+# Valor que nao se aplica e dito explicitamente, com o motivo, nunca omitido:
+# campo ausente parece lacuna a preencher, e o modelo tende a inventar um
+# codigo de rastreio ou um prazo em vez de reconhecer que, para este pedido,
+# eles ainda nao existem (RNF-01).
+_NO_TRACKING_MESSAGE = "Ainda não há código de rastreio porque o pedido não foi despachado."
+_NO_ESTIMATED_DELIVERY_MESSAGE = (
+    "Ainda não há previsão de entrega porque o pedido não foi despachado."
+)
+
 
 def _window_message(window: ReturnWindow) -> str:
     """Frase pronta em portugues para o estado da janela de troca/devolucao."""
@@ -89,8 +98,14 @@ def build_order_tools(
 
         if order.estimated_delivery is not None:
             result["estimated_delivery"] = order.estimated_delivery.isoformat()
+        else:
+            result["estimated_delivery_message"] = _NO_ESTIMATED_DELIVERY_MESSAGE
+
         if order.tracking_code is not None:
             result["tracking_code"] = order.tracking_code
+        else:
+            result["tracking_code_message"] = _NO_TRACKING_MESSAGE
+
         if order.notes is not None:
             result["notes"] = order.notes
 
