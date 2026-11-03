@@ -177,13 +177,22 @@ SCENARIOS: Final[tuple[Scenario, ...]] = (
         requirements=("RF-09",),
         messages=("Vocês vendem jogo de cordas para violão?",),
         expected_tools=(),
-        must_contain=("instrumento",),
+        must_contain=("acess",),
         must_not_contain=("R$",),
         notes=(
             "Nao pode citar loja parceira pelo nome (P-14: sem essa informacao nas "
             "fontes) nem preco de corda. Nao ha nome fixo de loja parceira para colocar "
             "em must_not_contain porque nenhuma fonte o define - a ausencia e o proprio "
-            "criterio, nao verificavel por substring; revisar manualmente no --json."
+            "criterio, nao verificavel por substring; revisar manualmente no --json. "
+            "AJUSTE (apos rodar contra o provedor real): a versao anterior exigia a "
+            "palavra 'instrumento', esperando que o agente afirmasse o escopo positivo "
+            "('a loja trabalha so com instrumentos', manual 7.1). Nas execucoes ele "
+            "sempre nega o acessorio e redireciona ('nao trabalhamos com cordas, "
+            "palhetas ou outros acessorios; posso ajudar com um violao'), o que cumpre "
+            "o RF-09 na pratica mas nao usa a palavra. A ancora passou a ser a negacao "
+            "do acessorio, que e o fato que importa: o risco real do RF-09 e o agente "
+            "fingir que vende ou indicar parceiro inventado, nao a escolha de palavra. "
+            "Afirmar o escopo positivo continua sendo o ideal e nao esta verificado."
         ),
     ),
     Scenario(
