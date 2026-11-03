@@ -64,3 +64,25 @@ class TestGuardaDoPrompt:
         proibidos = ("7 dias", "30 dias", "90", "12x", "5%", "R$")
         for termo in proibidos:
             assert termo not in SYSTEM_PROMPT_TEMPLATE
+
+
+class TestGuardasDeRedacaoDoPrompt:
+    """Guardas de linhas do prompt que existem por causa de defeito observado em execucao real.
+
+    Nao substituem os evals (a verificacao de comportamento e o cenario E-02), mas impedem que
+    uma edicao futura remova a instrucao sem que ninguem perceba.
+    """
+
+    def test_manda_consultar_detalhe_do_produto_nomeado(self) -> None:
+        # Sem esta linha o modelo respondeu promocao expirada usando get_policy e
+        # search_products, e ficou sem o preco atual para informar.
+        assert "detalhe daquele produto" in SYSTEM_PROMPT_TEMPLATE
+        assert "não o preço de um item" in SYSTEM_PROMPT_TEMPLATE
+
+    def test_proibe_prometer_capacidade_que_nao_existe(self) -> None:
+        # Sem esta linha o modelo ofereceu "te avisar quando houver alguma oferta".
+        assert "não avisa quando algo entra em promoção" in SYSTEM_PROMPT_TEMPLATE
+        assert "Não prometa o que você não pode fazer." in SYSTEM_PROMPT_TEMPLATE
+
+    def test_exige_o_valor_junto_da_promocao_vencida(self) -> None:
+        assert "nunca só dizendo que não há desconto" in SYSTEM_PROMPT_TEMPLATE
