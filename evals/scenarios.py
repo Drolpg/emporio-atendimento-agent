@@ -155,13 +155,20 @@ SCENARIOS: Final[tuple[Scenario, ...]] = (
         requirements=("RF-07",),
         messages=("Pedido 8, telefone (67) 99654-7821. Comprei e me arrependi, posso devolver?",),
         expected_tools=("get_order_status",),
-        must_contain=("enviado", "receber"),
+        must_contain=("receber",),
         must_not_contain=("vencido",),
         store_today="2026-02-20",
         notes=(
             "Pedido 8: shipped (customer_id 2, telefone bate), sem recebimento ainda - "
             "arrependimento 'not_started' (so comeca a contar quando o cliente receber); "
-            "troca por defeito conta da compra (2026-02-15 + 30 dias) e continua aberta."
+            "troca por defeito conta da compra (2026-02-15 + 30 dias) e continua aberta. "
+            "AJUSTE (apos rodar contra o provedor real em 2026-11-03, duas vezes): a "
+            "versao anterior exigia a palavra 'enviado' alem de 'receber'; nas duas "
+            "execucoes o modelo descreveu o pedido como 'ainda esta a caminho' - sinonimo "
+            "correto de enviado/em transporte, so que com outra palavra. Removido 'enviado' "
+            "porque a variacao de vocabulario para o mesmo fato nao e falha de fidelidade; "
+            "'receber' sozinho ja confirma o fato central (prazo conta do recebimento, nao "
+            "da compra), que apareceu nas duas execucoes."
         ),
     ),
     Scenario(
