@@ -155,6 +155,9 @@ class TestElegibilidadeDeTrocaEDevolucao:
         result = _call(tools, order_id=8, email_or_phone=customer.email)
 
         assert result["tracking_code"] == "BRJL5544332BR"
+        assert result["estimated_delivery"] == "2026-02-28"
+        assert "tracking_code_message" not in result
+        assert "estimated_delivery_message" not in result
 
         eligibility = result["return_eligibility"]
         assert eligibility["withdrawal"]["is_open"] is False
@@ -182,6 +185,68 @@ class TestElegibilidadeDeTrocaEDevolucao:
         withdrawal = result["return_eligibility"]["withdrawal"]
         assert withdrawal["is_open"] is False
         assert "vencido" in withdrawal["message"]
+
+
+class TestNegacaoExplicitaDeRastreioEPrazo:
+    """Criterio 4: pedido nao despachado nega rastreio e previsao, nao omite."""
+
+    def test_pedido_11_confirmado_nega_rastreio_e_previsao(
+        self, order_book: OrderBook, catalog: Catalog
+    ):
+        customer = order_book.customer(order_book.order(11).customer_id)
+        tools = _tools_by_name(order_book, catalog, _clock("2026-02-20"))
+        result = _call(tools, order_id=11, email_or_phone=customer.email)
+
+        assert result["status"] == "confirmed"
+        assert "tracking_code" not in result
+        assert "estimated_delivery" not in result
+
+        tracking_message = result["tracking_code_message"].lower()
+        assert "rastreio" in tracking_message
+        assert "despachado" in tracking_message
+
+        delivery_message = result["estimated_delivery_message"].lower()
+        assert "previsão" in delivery_message or "previsao" in delivery_message
+
+
+class TestVarreduraDeNegacaoExplicita:
+    """Criterio 6: nenhum prazo ou rastreio desaparece sem um campo de negacao ao lado.
+
+    Guarda generica: coleta as chaves candidatas (rastreio e previsao) vistas em
+    qualquer pedido da amostra; se faltar em algum caso, exige uma chave-irma que
+    cite o mesmo radical explicando a ausencia. Pega omissao nova introduzida
+    depois, sem precisar listar cada pedido na mao.
+    """
+
+    def test_nenhum_prazo_ou_rastreio_desaparece_sem_negacao(
+        self, order_book: OrderBook, catalog: Catalog
+    ):
+        tools = _tools_by_name(order_book, catalog, _clock("2026-02-20"))
+        results = []
+        for order_id in range(1, 21):
+            order = order_book.order(order_id)
+            customer = order_book.customer(order.customer_id)
+            results.append(_call(tools, order_id=order_id, email_or_phone=customer.email))
+
+        value_keys = {
+            key
+            for result in results
+            for key in result
+            if key.endswith("_brl")
+            or key.endswith("_cents")
+            or key in ("tracking_code", "estimated_delivery")
+        }
+
+        for result in results:
+            for key in value_keys:
+                if key in result:
+                    continue
+                stem = key.split("_")[0]
+                siblings = [other for other in result if other != key and stem in other]
+                assert siblings, (
+                    f"chave '{key}' ausente sem campo de negacao explicita "
+                    f"no pedido {result.get('order_id')!r}: {result!r}"
+                )
 
 
 class TestTextoComAcentoParaOCliente:

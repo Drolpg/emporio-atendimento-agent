@@ -7,13 +7,15 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
+from decimal import Decimal
 
 import pytest
 
 from emporio.config import project_root
 from emporio.data.catalog import Catalog
+from emporio.domain.pricing import quote
 from emporio.tools.base import JsonDict, ToolSpec, call_tool, openai_tools
-from emporio.tools.catalog_tools import build_catalog_tools
+from emporio.tools.catalog_tools import _payment_block, build_catalog_tools
 
 RAW_DIR = project_root() / "data" / "raw"
 
@@ -136,14 +138,25 @@ class TestGetProductDetails:
         assert "promotion" not in payment
         assert payment["pix_price_brl"] == "R$ 2.089,05"
         assert payment["max_installments"] == 12
+        assert payment["pix_discount_applies"] is True
 
-    def test_produto_94_promocao_ativa_sem_pix(self, tools_by_name: Mapping[str, ToolSpec]):
+    def test_produto_94_promocao_ativa_sem_pix_com_negacao_explicita(
+        self, tools_by_name: Mapping[str, ToolSpec]
+    ):
+        """Criterio 1: desconto do PIX negado, nao omitido (manual 6.2, nao cumulativo)."""
         result = _call(tools_by_name, "get_product_details", product_id=94)
         payment = result["payment"]
 
         assert payment["promotion"]["discount_percent"] == 8
+        assert payment["promotion"]["original_price_brl"] == "R$ 5.999,00"
         assert payment["final_price_brl"] == "R$ 5.519,08"
+
         assert "pix_price_brl" not in payment
+        assert "pix_price_cents" not in payment
+        assert payment["pix_discount_applies"] is False
+        message = payment["pix_discount_message"].lower()
+        assert "pix" in message
+        assert "promo" in message or "cumulativ" in message
 
     def test_produto_96_esgotado_com_alternativas(self, tools_by_name: Mapping[str, ToolSpec]):
         result = _call(tools_by_name, "get_product_details", product_id=96)
@@ -185,6 +198,72 @@ class TestGetProductDetails:
     def test_sem_argumentos_devolve_invalid_arguments(self, tools_by_name: Mapping[str, ToolSpec]):
         result = _call(tools_by_name, "get_product_details")
         assert result["error"] == "invalid_arguments"
+
+
+class TestNegacaoExplicitaDeParcelamento:
+    """Criterio 3: total que so cabe a vista nega o valor da parcela, nao omite."""
+
+    def test_produto_119_cabe_em_tres_parcelas(self, tools_by_name: Mapping[str, ToolSpec]):
+        result = _call(tools_by_name, "get_product_details", product_id=119)
+        payment = result["payment"]
+
+        assert payment["max_installments"] == 3
+        assert payment["installment_value_brl"] == "R$ 53,30"
+        assert payment["allows_installments"] is True
+        assert "installment_value_message" not in payment
+
+    def test_total_abaixo_de_cem_reais_so_permite_a_vista(self):
+        """Nenhum produto do catalogo cai nessa faixa (manual 3.1, 2x exige >= R$ 100);
+        a cotacao e feita chamando `quote` do dominio diretamente, como combinado."""
+        price_quote = quote(Decimal("99.90"))
+        assert price_quote.max_installments == 1
+
+        payment = _payment_block(price_quote)
+
+        assert "installment_value_brl" not in payment
+        assert "installment_value_cents" not in payment
+        assert payment["allows_installments"] is False
+        message = payment["installment_value_message"].lower()
+        assert "vista" in message
+
+
+class TestVarreduraDeNegacaoExplicita:
+    """Criterio 6: nenhum valor monetario desaparece sem um campo de negacao ao lado.
+
+    Guarda generica: coleta todas as chaves que parecem valor monetario (sufixo
+    `_brl`/`_cents`) vistas em qualquer bloco de pagamento da amostra; se faltar
+    em algum caso, exige uma chave-irma que cite o mesmo radical (ex.: `pix` ou
+    `installment`) explicando a ausencia. Pega omissao nova introduzida depois,
+    sem precisar listar cada campo na mao.
+    """
+
+    def test_nenhum_valor_monetario_desaparece_sem_negacao(
+        self, tools_by_name: Mapping[str, ToolSpec]
+    ):
+        product_ids = [94, 95, 90, 96, 119, 121, 130, 136]
+        payments = []
+        for product_id in product_ids:
+            result = _call(tools_by_name, "get_product_details", product_id=product_id)
+            if "payment" in result:
+                payments.append(result["payment"])
+        assert len(payments) >= 2
+
+        value_keys = {
+            key
+            for payment in payments
+            for key in payment
+            if key.endswith("_brl") or key.endswith("_cents")
+        }
+
+        for payment in payments:
+            for key in value_keys:
+                if key in payment:
+                    continue
+                stem = key.split("_")[0]
+                siblings = [other for other in payment if other != key and stem in other]
+                assert siblings, (
+                    f"chave '{key}' ausente sem campo de negacao explicita em {payment!r}"
+                )
 
 
 class TestSituationMessageFidelidade:
