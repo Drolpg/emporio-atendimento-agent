@@ -509,4 +509,105 @@ specs/                 # requisitos, design e tarefas (fonte da verdade do que e
 
 ## Uso de assistentes de código
 
-<!-- preenchido pelo autor -->
+Usei assistente de código como par de programação, num arranjo em que **eu fico com a
+autoridade sobre o que entra e a ferramenta fica com a velocidade de escrever**. Na
+prática isso significou que nenhuma linha, nenhuma decisão de arquitetura e nenhuma
+correção entrou no repositório sem passar por mim — e, em vários pontos, o que entrou foi
+diferente do que a ferramenta propôs.
+
+### Como organizei o trabalho
+
+- **Especificação antes do código (SDD), escrita e validada por mim.** Analisei os CSVs e
+  o manual de políticas e fixei a especificação em [`specs/`](specs/): requisitos com
+  critérios de aceite verificáveis, design e tarefas rastreadas. Toda ambiguidade do
+  enunciado ou dos dados virou premissa explícita e documentada (seção
+  [Premissas](#premissas)) — nenhuma ficou para a ferramenta resolver por conta.
+- **Planejamento separado da execução.** Uma sessão de planejamento quebrava o trabalho em
+  tarefas com critérios de aceite numerados; a implementação ia para executores com escopo
+  de arquivos restrito. O modelo de cada tarefa foi escolhido pela complexidade: o mais
+  leve para trabalho mecânico de contrato fechado, o mais capaz para regra de negócio com
+  nuance, o loop do agente, o prompt e a documentação.
+- **TDD como instrumento de verificação, não como ritual.** Cada tarefa começava pelos
+  testes derivados dos critérios de aceite que eu havia escrito, e só depois pela
+  implementação — o histórico mostra isso nos pares `test:` → `feat:`. Nada entrava com a
+  suíte ou o lint vermelhos. Os testes rodam sem rede e sem chave, com um LLM roteirizado,
+  então o comportamento do agente também é verificado de forma determinística.
+- **Exemplos reais.** As conversas em [`examples/conversas/`](examples/conversas/) foram
+  geradas executando o agente contra o provedor; nenhuma resposta foi escrita, polida ou
+  editada à mão.
+
+### Como eu revisei e validei
+
+Esta foi a parte em que gastei mais atenção, porque é onde o arranjo funciona ou falha:
+
+- **Decisão proposta não é decisão tomada.** Cada escolha técnica relevante chegou a mim
+  como proposta com alternativas, e eu decidi — a abordagem de function calling com
+  ferramentas tipadas em vez de RAG vetorial ou SQL gerado pelo modelo; o provedor e o
+  modelo do LLM; os schemas escritos à mão em vez de gerados, para controlar o custo de
+  contexto; o loop próprio em vez de framework. As que eu aceitei e as que eu recusei estão
+  registradas com contexto, opções, escolha e motivo.
+- **Validei resultado, não relatório.** Não aceitei "está pronto e os testes passam": para
+  cada entrega eu rodei os critérios de aceite por script próprio, contra os dados reais, em
+  vez de confiar nos nomes dos testes. Foi assim que apareceram coisas que o relatório não
+  mencionava — de um alvo de build que não fazia o que dizia a um cliente de LLM que
+  transformava bug de programação em "serviço indisponível".
+- **Desconfiei de mitigação escrita.** O ponto mais frágil do desenho era o schema das
+  ferramentas, escrito à mão, divergir da implementação. Havia um teste de conformidade
+  para isso; eu injetei de propósito um parâmetro inexistente no schema e confirmei que o
+  teste quebrava com mensagem clara, antes de considerar o risco coberto.
+- **Revisei o prompt do agente linha a linha, e ele é meu.** Toda regra numérica
+  (prazo, parcela, percentual, valor) vive em código testado, nunca no prompt — e há um
+  teste que falha se um número de regra de negócio aparecer nele. O prompt diz *quando
+  consultar*, não *quanto é*.
+- **Auditei o README contra o código.** Conferi cada comando, cada caminho de arquivo e
+  cada número antes de publicar; os que eu não consegui confirmar saíram do texto.
+
+### Onde a revisão mudou o resultado
+
+Quatro casos concretos em que o que eu validei foi diferente do que estava proposto ou
+entregue:
+
+- **Corrigi uma regra de negócio que a especificação inicial tinha errado.** A proposta
+  tratava todos os prazos de troca com a mesma data de referência. Lendo o manual em PDF,
+  identifiquei que a troca por defeito conta 30 dias **da compra**, não do recebimento como
+  as demais, e que existe uma garantia legal de 90 dias que havia sido omitida. Era a
+  diferença entre o agente acertar e errar a elegibilidade de um pedido real. Virou uma
+  tabela de quatro prazos, cada um com sua própria data de referência — e hoje é o que o
+  agente demonstra melhor: num pedido ainda não entregue, ele responde que o arrependimento
+  não começou **e** que o prazo por defeito segue aberto.
+
+- **Recusei a correção proposta e exigi a causa raiz.** A avaliação pegou o agente
+  respondendo um preço no PIX calculado por ele mesmo (tabela × 0,95) para um produto com
+  promoção ativa — errado duas vezes, porque PIX não acumula com promoção e porque calcular
+  valor é proibido. O diagnóstico inicial apontava o prompt, que já proibia calcular.
+  Insisti em olhar o retorno da ferramenta e a causa estava ali: ela **omitia** o preço no
+  PIX quando não se aplicava, e campo ausente parece lacuna a preencher. Transformei isso em
+  regra de projeto, aplicada a todas as ferramentas: valor que não se aplica é negado
+  explicitamente, com o motivo, nunca omitido.
+
+- **Rejeitei os três primeiros resultados da avaliação.** Na primeira execução, três
+  cenários reprovaram e eu verifiquei um por um antes de mandar mexer no agente: nenhum era
+  culpa dele. Um reprovou porque o modelo escreveu o nome do produto com hífen tipográfico,
+  outro porque disse "não está mais ativa" onde o critério exigia a palavra "vigente", outro
+  porque escreveu a data em formato brasileiro onde o critério pedia ISO. Mandei afrouxar a
+  comparação para medir fato em vez de formatação — e aí exigi testes negativos, que
+  revelaram dois falsos positivos reais abertos pelo afrouxamento: "8%" passava a casar
+  dentro de "18%" e "R$ 100,00" dentro de "R$ 100,05". Os dois importam, porque um produto
+  da base tem 8% de desconto e outro 18%.
+
+- **Barrei a reescrita de histórico depois de um erro meu de paralelização.** Autorizei duas
+  tarefas simultâneas achando que bastava os arquivos serem disjuntos. Eram, mas o índice do
+  Git é um por árvore de trabalho: um commit levou arquivos da outra tarefa e o seguinte
+  registrou a remoção de um diretório inteiro. O conteúdo final ficou correto e a suíte
+  verde. A saída mais limpa seria reescrever os dois commits; preferi corrigir com um commit
+  adicional e manter o histórico honesto, e passei a rodar uma tarefa por vez.
+
+### Onde fui conservador de propósito
+
+Em três momentos escolhi entregar menos em vez de entregar algo que eu não pudesse
+sustentar: o número da avaliação no README é o da última execução completa, **anterior às
+correções**, e está apresentado como tal em vez de substituído por estimativa; onde a
+avaliação não consegue verificar um aspecto, isso está escrito no próprio cenário em vez de
+coberto por um critério que passaria pelo motivo errado; e as limitações descrevem o limite
+diário de tokens do provedor com número medido, porque foi ele que restringiu rodar a
+avaliação quantas vezes eu queria.
