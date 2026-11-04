@@ -94,7 +94,8 @@ flowchart LR
     T --> P["Pedidos (com verificacao)"]
     T --> Pol["Politicas por topico"]
     T --> S["Status da loja / encaminhamento"]
-    C & P --> D[("CSVs tratados")]
+    C --> D[("CSVs tratados")]
+    P --> D
     Pol --> M[("Manual em secoes")]
     A <--> H[("Historico SQLite")]
 ```
@@ -105,22 +106,22 @@ flowchart LR
 sequenceDiagram
     participant Cliente
     participant CLI
-    participant Loop as Loop do agente
+    participant Agente as Loop do agente
     participant LLM
     participant Ferramenta
     participant Dados
 
     Cliente->>CLI: mensagem do cliente
-    CLI->>Loop: respond(mensagem, historico)
-    Loop->>LLM: mensagens + schemas das ferramentas (1a chamada)
-    LLM-->>Loop: decide chamar uma ferramenta (tool_calls)
-    Loop->>Ferramenta: executa a ferramenta escolhida
+    CLI->>Agente: respond(mensagem, historico)
+    Agente->>LLM: mensagens + schemas das ferramentas (1a chamada)
+    LLM-->>Agente: decide chamar uma ferramenta (tool_calls)
+    Agente->>Ferramenta: executa a ferramenta escolhida
     Ferramenta->>Dados: consulta CSV ou secao do manual
     Dados-->>Ferramenta: dado encontrado
-    Ferramenta-->>Loop: resultado em JSON
-    Loop->>LLM: historico + mensagem "tool" com o resultado (2a chamada)
-    LLM-->>Loop: resposta final em texto
-    Loop-->>CLI: resposta e lista de ferramentas usadas
+    Ferramenta-->>Agente: resultado em JSON
+    Agente->>LLM: historico + mensagem tool com o resultado (2a chamada)
+    LLM-->>Agente: resposta final em texto
+    Agente-->>CLI: resposta e lista de ferramentas usadas
     CLI-->>Cliente: resposta final
 ```
 
